@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=VPN.ht
+Comment=VPN.ht client
+Exec=/usr/lib/vpnht/VPNht
+Terminal=false
+Type=Application
+StartupNotify=false
+Icon=vpnht
+Categories=Network;TrayIcon;
+StartupWMClass=vpnht

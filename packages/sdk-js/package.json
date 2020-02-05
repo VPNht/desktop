@@ -1,0 +1,34 @@
+{
+  "name": "@vpnht/sdk",
+  "version": "0.0.0",
+  "repository": "vpnht/desktop",
+  "homepage": "https://github.com/vpnht/desktop/blob/master/packages/sdk-js/README.md",
+  "main": "index.js",
+  "module": "index.es.js",
+  "jsnext:main": "index.es.js",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "@vpnht:registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "prepublish": "concurrently 'yarn run build:prod' 'yarn run build:dev'",
+    "build:dev": "rollup -c --environment BABEL_ENV:node",
+    "build:prod": "rollup -c --environment BABEL_ENV:node,BUILD_MODE:production"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
+    "@rollup/plugin-json": "^4.0.2",
+    "concurrently": "^5.1.0",
+    "rollup": "^1.31.0",
+    "rollup-plugin-babel": "^4.3.3"
+  },
+  "dependencies": {
+    "request": "^2.88.0",
+    "request-progress": "^3.0.0",
+    "request-promise-native": "^1.0.8",
+    "ws": "^7.2.1"
+  }
+}

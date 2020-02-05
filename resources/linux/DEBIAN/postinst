@@ -1,0 +1,8 @@
+#!/bin/sh
+
+systemctl daemon-reload &> /dev/null || true
+systemctl restart vpnht &> /dev/null || true
+systemctl enable vpnht &> /dev/null || true
+gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+xdg-icon-resource forceupdate --theme hicolor &> /dev/null || true
+update-desktop-database -q || true

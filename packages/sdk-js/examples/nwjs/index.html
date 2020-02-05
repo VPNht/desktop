@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Context Menu</title>
+  </head>
+  <body>
+    <p>This is a NW.js Example</p>
+
+    <script>
+      const init = async () => {
+        var VPNht = require("../../");
+
+        var textStatus = document.createTextNode(
+          `VPN.ht is installed ${VPNht.isInstalled()}`
+        );
+
+        var textConnected = document.createTextNode(
+          ` - VPN.ht is connected ${await VPNht.isConnected()} - `
+        );
+
+        // subscribe to vpn status update
+        var vpnStatus = VPNht.status();
+
+        vpnStatus.on("connected", () => {
+          console.log("CONNECTED");
+        });
+
+        vpnStatus.on("disconnected", () => {
+          console.log("DISCONNECTED");
+        });
+
+        vpnStatus.on("error", error => {
+          console.log("ERROR", error);
+        });
+
+        var installAppButton = document.createElement("button");
+        installAppButton.innerHTML = "Install";
+
+        var openAppButton = document.createElement("button");
+        openAppButton.innerHTML = "Open App";
+
+        document.body.appendChild(textStatus);
+        document.body.appendChild(textConnected);
+        document.body.appendChild(openAppButton);
+        document.body.appendChild(installAppButton);
+
+        openAppButton.addEventListener("click", function() {
+          VPNht.open();
+        });
+
+        installAppButton.addEventListener("click", async function() {
+          const installer = await VPNht.install();
+
+          installer.on("download", ({ percent, time }) => {
+            console.log("DOWNLOAD PERCENT", percent * 100);
+            console.log("TIME REMAINING", time.remaining);
+          });
+
+          installer.on("downloaded", data => {
+            console.log(data);
+          });
+
+          installer.on("installed", () => {
+            VPNht.open();
+          });
+
+          installer.on("error", data => {
+            console.log(data);
+          });
+        });
+      };
+
+      init();
+    </script>
+  </body>
+</html>

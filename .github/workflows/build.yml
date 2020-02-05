@@ -1,0 +1,210 @@
+name: VPN.ht Desktop
+
+on: [push]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - name: Context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+
+      - name: Use GO 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: "1.13.6"
+
+      - name: yarn version
+        run: |
+          yarn version
+
+      - name: go version
+        run: |
+          go version
+
+      - name: node version
+        run: |
+          node --version
+
+      - name: Snapcraft [ubuntu]
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo snap install snapcraft --classic
+          sudo snap install multipass --classic
+
+      - name: Install actions dependencies [build-version]
+        working-directory: ./.github/actions/build-version
+        run: |
+          yarn install
+
+      - name: Update build version
+        id: build_version
+        uses: ./.github/actions/build-version
+
+      - name: Build Service [macOS]
+        if: matrix.os == 'macOS-latest'
+        run: |
+          ./scripts/build/macos.sh
+        env:
+          KEY_LINK: ${{ secrets.MACOS_CERT }}
+          KEY_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          GOPATH: ${{ runner.workspace }}
+
+      - name: Build Service [ubuntu]
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          ./scripts/build/linux.sh
+        env:
+          GOPATH: ${{ runner.workspace }}
+
+      - name: Build Service [windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          go run ./scripts/build/windows.go
+        env:
+          GOPATH: ${{ runner.workspace }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ matrix.os }}
+          path: build
+
+  release:
+    needs: build
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Context
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Get the version
+        id: get_version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+
+      - uses: actions/download-artifact@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: ubuntu-latest
+
+      - uses: actions/download-artifact@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: windows-latest
+
+      - uses: actions/download-artifact@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: macOS-latest
+
+      - run: find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset [macOS]
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./macOS-latest/VPNht.pkg
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.pkg
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [ubuntu]
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ubuntu-latest/ubuntu.deb
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.deb
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [redhat]
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ubuntu-latest/redhat.rpm
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.rpm
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [windows]
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows-latest/VPNht-Setup.exe
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.exe
+          asset_content_type: application/octet-stream
+
+  publish-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Context
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - uses: actions/checkout@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+
+      - uses: actions/setup-node@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+
+      - name: Get the version
+        id: get_version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+
+      - run: yarn install
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: ./packages/sdk-js
+
+      - run: yarn publish --new-version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: ./packages/sdk-js
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

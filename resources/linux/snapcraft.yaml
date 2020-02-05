@@ -1,0 +1,60 @@
+name: vpnht
+base: core18
+adopt-info: vpnht
+summary: VPN.ht
+description: |
+  Secure all your devices with our leading-edge VPN service.
+
+grade: stable
+confinement: classic
+
+architectures:
+  - build-on: amd64
+
+parts:
+  gnome:
+    plugin: nil
+    build-packages:
+      - software-properties-common
+    override-pull: |
+      add-apt-repository -y ppa:ubuntu-desktop/gnome-3-26
+      apt -y update
+      apt -y upgrade
+
+  vpnht:
+    after:
+      - gnome
+    source: ../ubuntu
+    plugin: dump
+    stage-packages:
+      - libxss1
+      - libnss3
+      - libnspr4
+      - libgconf-2-4
+      - libgtk2.0-0
+      - net-tools
+      - iptables
+      - openvpn
+    override-build: |
+      set -xeu
+      VERSION=$(cat $SNAPCRAFT_PART_SRC/usr/lib/vpnht/resources/app/package.json | grep version | cut -d '"' -f 4)
+      cp -R $SNAPCRAFT_PART_SRC/* $SNAPCRAFT_PART_INSTALL/
+      ls -la $SNAPCRAFT_PART_INSTALL
+      sed -i 's|Icon=vpnht|Icon=${SNAP}/usr/share/icons/hicolor/512x512/apps/vpnht.png|' $SNAPCRAFT_PART_INSTALL/usr/share/applications/vpnht.desktop
+      snapcraftctl set-version "$VERSION"
+    prime:
+      - -usr/lib/vpnht/chrome-sandbox
+
+apps:
+  vpnht:
+    desktop: usr/share/applications/vpnht.desktop
+    command: usr/lib/vpnht/VPNht
+    environment:
+      # Fallback to XWayland if running in a Wayland session.
+      DISABLE_WAYLAND: 1
+      GSETTINGS_SCHEMA_DIR: $SNAP/usr/share/glib-2.0/schemas
+
+  service:
+    command: usr/bin/vpnht-service
+    daemon: simple
+    plugs: [network, network-bind]

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+systemctl stop vpnht &> /dev/null || true
+systemctl disable vpnht &> /dev/null || true

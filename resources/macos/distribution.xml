@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <title>VPN.ht</title>
+    <organization>ht.vpn</organization>
+    <domains enable_localSystem="true"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true"/>
+    <background file="diagram.tiff" alignment="bottomleft" scaling="none"/>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <license file="license.txt"/>
+    <pkg-ref id="ht.vpn.pkg.VPNht" version="0.0.0"
+        auth="root">Build.pkg</pkg-ref>
+    <choices-outline>
+        <line choice="ht.vpn.pkg.VPNht"/>
+    </choices-outline>
+    <choice
+        id="ht.vpn.pkg.VPNht"
+        visible="true"
+        title="VPN.ht Client"
+        description="VPN.ht OpenVPN Client"
+        start_selected="true">
+      <pkg-ref id="ht.vpn.pkg.VPNht"/>
+    </choice>
+</installer-gui-script>

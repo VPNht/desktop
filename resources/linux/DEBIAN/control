@@ -1,0 +1,8 @@
+Package: vpnht
+Version: 0.0.0
+Architecture: all
+Maintainer: VPN.ht <support@vpn.ht>
+Depends: libgconf-2-4, libgtk2.0-0, libxss1, net-tools, iptables, openvpn
+Homepage: https://vpn.ht
+Description: Secure all your devices with our leading-edge VPN service.
+

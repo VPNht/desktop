@@ -1,0 +1,8 @@
+.DS_Store
+go
+/build
+node_modules
+dev
+packages/client/target
+packages/service/service
+developer-id-cert.p12

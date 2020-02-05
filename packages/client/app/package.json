@@ -1,0 +1,13 @@
+{
+  "name": "vpn.ht",
+  "productName": "vpn.ht",
+  "description": "A VPN client built on web technologies",
+  "version": "0.0.0",
+  "license": "GPL",
+  "author": {
+    "name": "VPN.ht Limited",
+    "email": "support@vpn.ht"
+  },
+  "repository": "vpnht/desktop",
+  "dependencies": {}
+}

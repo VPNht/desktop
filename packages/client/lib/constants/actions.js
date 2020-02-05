@@ -1,0 +1,13 @@
+export const APP_READY = "APP_READY";
+export const CONNECTED = "CONNECTED";
+export const CONNECTING = "CONNECTING";
+export const DISCONNECTED = "DISCONNECTED";
+export const VIEW = "VIEW";
+export const CURRENT_ACTION = "CURRENT_ACTION";
+export const VPN_ERROR = "VPN_ERROR";
+export const SERVICE_ERROR = "SERVICE_ERROR";
+export const SERVICE_SENT_UPDATE = "SERVICE_SENT_UPDATE";
+export const UI_OPEN_HAMBURGER_MENU = "UI_OPEN_HAMBURGER_MENU";
+export const SERVICE_LOG = "SERVICE_LOG";
+export const LOGIN = "LOGIN";
+export const LOGOUT = "LOGOUT";

@@ -1,0 +1,8 @@
+name: "Get build version"
+description: "Update the app with the correct version and return the version used"
+outputs:
+  version:
+    description: "The version returned"
+runs:
+  using: "node12"
+  main: "index.js"
