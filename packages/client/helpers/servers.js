@@ -6,23 +6,10 @@ export const serversCountry = async (fallback = false) => {
   let servers = await request.get({
     json: true,
     uri: fallback
-      ? "http://check.myip.ht:8080/servers.json"
-      : "https://myip.ht/servers.json",
+      ? "http://check.myip.ht:8080/servers-geo.json"
+      : "https://myip.ht/servers-geo.json",
     timeout: 3000
   });
-  console.log(servers);
-  info(`Servers list: ${Object.keys(servers).length} country`);
-
-  return Object.keys(servers)
-    .sort()
-    .map(server => {
-      let realServer = server;
-      if (server === "mx") {
-        realServer = "mex";
-      }
-      if (server === "gb") {
-        realServer = "uk";
-      }
-      return { host: realServer, country: countries[server.toUpperCase()] };
-    });
+  info(`Servers list: ${servers.length} servers found.`);
+  return servers;
 };

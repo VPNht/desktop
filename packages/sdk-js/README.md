@@ -114,6 +114,8 @@ ATTENTION: The sdk will automatically open the installer when ready. You shouldn
 
 Triggered when the install is completed and the client ready.
 
+We suggest to call `open()`.
+
 #### `.on('error', function (error) {})`
 
 Triggered when something went wrong with the install procedure.

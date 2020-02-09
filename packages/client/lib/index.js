@@ -25,9 +25,7 @@ if (process.platform === "linux") {
 const initialState = {};
 
 const httpLink = new HttpLink({
-  uri: isDev
-    ? "http://localhost:8080/graphql"
-    : "http://217.23.13.24:8080/graphql"
+  uri: isDev ? "http://localhost:8080/graphql" : "https://my.vpn.ht/graphql"
 });
 
 const authLink = setContext((request, { headers }) => {

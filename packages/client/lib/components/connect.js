@@ -132,13 +132,27 @@ export default ({ servers }) => {
                       }}
                       value={selectedServer.value}
                     >
-                      {servers.map(server => {
-                        return (
-                          <option key={server.host} value={server.host}>
-                            {server.country}
-                          </option>
-                        );
-                      })}
+                      {servers
+                        .sort((a, b) => {
+                          if (a.countryName < b.countryName) {
+                            return -1;
+                          }
+                          if (a.countryName > b.countryName) {
+                            return 1;
+                          }
+                          return 0;
+                        })
+                        .map(server => {
+                          return (
+                            <option key={server.host} value={server.host}>
+                              {server.countryName}-
+                              {server.host.toUpperCase().replace(/^\D+/g, "")} (
+                              {Math.round(server.distance)} KM)
+                              {server.regionName && ` - ${server.regionName}`}
+                              {server.city && `, ${server.city}`}
+                            </option>
+                          );
+                        })}
                     </select>
 
                     <button
