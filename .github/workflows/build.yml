@@ -65,6 +65,7 @@ jobs:
         env:
           KEY_LINK: ${{ secrets.MACOS_CERT }}
           KEY_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          APPLE_DEVELOPER_PASSWORD: ${{ secrets.APPLE_DEVELOPER_PASSWORD }}
           GOPATH: ${{ runner.workspace }}
 
       - name: Build Service [ubuntu]
