@@ -14,7 +14,7 @@ pushd packages/client
 yarn
 yarn dist
 ./node_modules/.bin/electron-rebuild
-./node_modules/.bin/electron-packager ./target VPNht --platform=linux --arch=x64 --icon=./target/static/vpnht.icns --out=../../build/linux
+./node_modules/.bin/electron-packager ./target VPNht --platform=linux --arch=x64 --icon=./target/static/vpnht.png --out=../../build/linux
 popd
 
 chmod +x ./build/linux/VPNht-linux-x64/libffmpeg.so

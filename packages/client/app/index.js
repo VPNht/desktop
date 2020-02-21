@@ -165,12 +165,14 @@ const checkService = async () => {
     } else if (evt.type === "connected") {
       isConnected = true;
       updateHamburgerMenu();
+      buildTrayMenu();
       if (tray) {
         tray.setImage(trayIcons.connected);
       }
     } else if (evt.type === "disconnected") {
       isConnected = false;
       updateHamburgerMenu();
+      buildTrayMenu();
       if (tray) {
         tray.setImage(trayIcons.default);
       }
@@ -199,12 +201,7 @@ const checkService = async () => {
 
   if (process.platform !== "linux") {
     tray = new Tray(vpnStatus ? trayIcons.connected : trayIcons.default);
-    tray.on("click", function() {
-      openMainWin();
-    });
-    tray.on("double-click", function() {
-      openMainWin();
-    });
+    buildTrayMenu();
   }
 
   // app menu
@@ -297,6 +294,7 @@ const openMainWin = async () => {
   mainWindow = new BrowserWindow({
     title: "VPN.ht",
     frame: true,
+    icon: trayIcons.app,
     autoHideMenuBar: true,
     titleBarStyle: "hiddenInset",
     fullscreen: false,
@@ -405,6 +403,26 @@ const buildHamburgerMenu = menuItems => {
 
     hamburgerMenu.append(menuitem);
   });
+};
+
+const buildTrayMenu = () => {
+  if (!tray) {
+    return;
+  }
+
+  let menuItems = [{ label: "Open VPN.ht", click: () => openMainWin() }];
+
+  if (isConnected) {
+    menuItems = [
+      ...menuItems,
+      { label: "Disconnect", click: () => disconnect() }
+    ];
+  }
+
+  menuItems = [...menuItems, { label: "Exit", click: () => app.quit() }];
+  const contextMenu = Menu.buildFromTemplate(menuItems);
+
+  tray.setContextMenu(contextMenu);
 };
 
 const updateHamburgerMenu = () => {
