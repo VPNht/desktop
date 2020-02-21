@@ -22,6 +22,7 @@ import (
 	"github.com/vpnht/desktop/packages/service/handlers"
 	"github.com/vpnht/desktop/packages/service/logger"
 	"github.com/vpnht/desktop/packages/service/profile"
+	"github.com/vpnht/desktop/packages/service/servers"
 	"github.com/vpnht/desktop/packages/service/utils"
 	"github.com/vpnht/desktop/packages/service/watch"
 )
@@ -73,9 +74,11 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 
+	// setup the handlers'
 	router := gin.New()
 	handlers.Register(router)
 
+	// Start watch
 	watch.StartWatch()
 
 	server := &http.Server{
@@ -129,6 +132,10 @@ func main() {
 			server.Serve(listener)
 		}
 	}()
+
+	// Ping all servers
+	// non-blocking'
+	go servers.PingServersTicker()
 
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)

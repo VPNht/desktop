@@ -9,7 +9,7 @@ import {
   Notification
 } from "electron";
 import isDev from "electron-is-dev";
-import { resolve, join } from "path";
+import { resolve } from "path";
 import fs from "fs";
 
 import { wakeup, ping, status, disconnect } from "../helpers/service";
@@ -24,7 +24,6 @@ import { info, error, warning } from "../helpers/logger";
 import {
   // SETTINGS as SETTINGS_VIEW,
   LOGS as LOGS_VIEW,
-  LOGIN as LOGIN_VIEW,
   CONNECT as CONNECT_VIEW
 } from "../lib/constants/view";
 
@@ -42,6 +41,22 @@ info(`Initializing ${version}`);
 
 if (isDev) {
   info("Running in development mode");
+}
+
+app.allowRendererProcessReuse = true;
+
+console.log("Disabling Chromium GPU blacklist");
+app.commandLine.appendSwitch("ignore-gpu-blacklist");
+
+console.log("Enabling HIGH DPI Support");
+app.commandLine.appendSwitch("high-dpi-support", 1);
+
+console.log("Set scale factor");
+app.commandLine.appendSwitch("force-device-scale-factor", 1);
+
+if (process.platform === "darwin") {
+  console.log("Enabling Accelerated OpenGL renderer for darwin");
+  app.commandLine.appendSwitch("enable-features", "Metal");
 }
 
 const url = `file://${resolve(
@@ -250,12 +265,27 @@ const checkService = async () => {
           role: "selectall"
         }
       ]
+    },
+    {
+      label: "View",
+      submenu: [
+        {
+          label: "Toggle Developer Tools",
+          accelerator: "command+alt+i",
+          click: () => {
+            const webContents = mainWindow.webContents;
+            if (webContents.isDevToolsOpened()) {
+              webContents.closeDevTools();
+            } else {
+              webContents.openDevTools({ mode: "detach" });
+            }
+          }
+        }
+      ]
     }
   ]);
 
-  if (!isDev) {
-    Menu.setApplicationMenu(appMenu);
-  }
+  Menu.setApplicationMenu(appMenu);
 };
 
 const openMainWin = async () => {
@@ -268,15 +298,14 @@ const openMainWin = async () => {
     title: "VPN.ht",
     frame: true,
     autoHideMenuBar: true,
+    titleBarStyle: "hiddenInset",
     fullscreen: false,
-    width: 440,
-    height: 520,
+    width: 960,
+    height: 480,
     show: false,
     sandbox: true,
-    minWidth: 440,
-    minHeight: 520,
-    maxWidth: 440,
-    maxHeight: 520,
+    minWidth: process.platform === "darwin" ? 810 : 860,
+    minHeight: 410,
     backgroundColor: "#00A6A3",
     webPreferences: {
       nodeIntegration: true
@@ -315,6 +344,11 @@ const openMainWin = async () => {
     } else {
       mainWindow.show();
       mainWindow.focus();
+    }
+
+    // open dev tools
+    if (isDev) {
+      mainWindow.webContents.openDevTools({ mode: "detach" });
     }
   });
 };
@@ -385,16 +419,6 @@ const updateHamburgerMenu = () => {
         label: "Home",
         click: () => {
           rpc.emit("change view", CONNECT_VIEW);
-        }
-      }
-    ];
-  } else {
-    menuItems = [
-      ...menuItems,
-      {
-        label: "Login",
-        click: () => {
-          rpc.emit("change view", LOGIN_VIEW);
         }
       }
     ];
@@ -486,6 +510,10 @@ const configureRPC = win => {
   rpc.on("set status logout", () => {
     isLogged = false;
     updateHamburgerMenu();
+  });
+
+  rpc.on("open url", url => {
+    shell.openExternal(url);
   });
 };
 

@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useEffect, useContext } from "react";
+import { useMutation } from "@shopify/react-graphql";
+import gql from "graphql-tag";
+
 import Header from "./header";
 import { ping, status, disconnect } from "../../helpers/service";
-import { serversCountry } from "../../helpers/servers";
+import { getAllServers } from "../../helpers/service";
 import { subscribe } from "../../helpers/events";
 import { info, error as errorLog } from "../../helpers/logger";
+import ElectronStore from "../store/persist";
 
 import rpc from "../rpc";
 
@@ -16,33 +20,42 @@ import {
   SERVICE_LOG,
   VPN_ERROR,
   VIEW,
-  LOGOUT
+  LOGOUT,
+  LOGIN
 } from "../constants/actions";
+
 import {
-  CONNECTED as CONNECTED_VIEW,
   LOGS as LOGS_VIEW,
-  SETTINGS as SETTINGS_VIEW,
-  CONNECT as CONNECT_VIEW
+  SETTINGS as SETTINGS_VIEW
 } from "../constants/view";
+
 import {
   SERVICE_NOT_AVAILABLE,
   AUTH_FAILED,
   DISCONNECT_INACTIVE,
-  TIMEOUT_CONNECT,
-  CANT_FETCH_REMOTE
+  TIMEOUT_CONNECT
 } from "../constants/errors";
 
 import ServiceNotAvailable from "../components/serviceNotAvailable";
 import Loading from "../components/loading";
 import Connect from "../components/connect";
-import Login from "../components/login";
-import Connected from "../components/connected";
 import Settings from "../components/settings";
 import Logs from "../components/logs";
+import AppModal from "../components/modal";
+
+const serviceGql = gql`
+  mutation ServiceMutation {
+    service {
+      id
+      username
+      password
+    }
+  }
+`;
 
 export default () => {
-  const [servers, setServers] = useState([]);
   const [state, dispatch] = useContext(appContext);
+  const getServiceDetails = useMutation(serviceGql);
 
   useEffect(() => {
     const subscribeEvents = () => {
@@ -131,101 +144,76 @@ export default () => {
         return;
       }
 
+      let allServers;
+      try {
+        allServers = await getAllServers();
+        dispatch({
+          type: APP_READY,
+          payload: { servers: allServers }
+        });
+      } catch (error) {
+        errorLog(error);
+      }
+
       // are we connected or not?
       const vpnStatus = await status();
       if (vpnStatus) {
         info("Current status: Connected");
+        // last server
+        const lastServer = ElectronStore.get("lastServer");
         dispatch({
-          type: CONNECTED
+          type: CONNECTED,
+          payload: {
+            server: allServers.find(server => server.host === lastServer)
+          }
         });
       } else {
         info("Current status: Not Connected");
       }
 
-      try {
-        const serversCountryData = await serversCountry();
-        setServers(serversCountryData);
-        dispatch({
-          type: APP_READY
-        });
-      } catch (error) {
-        errorLog(error);
-        if (
-          error.error &&
-          error.error.code &&
-          (error.error.code === "ECONNREFUSED" ||
-            error.error.code === "ESOCKETTIMEDOUT")
-        ) {
-          try {
-            const serversCountryData = await serversCountry(true);
-            setServers(serversCountryData);
-            dispatch({
-              type: APP_READY
-            });
-          } catch (error) {
-            errorLog(error);
-            dispatch({
-              type: SERVICE_ERROR,
-              payload: {
-                error: CANT_FETCH_REMOTE
-              }
-            });
-          }
-        }
-
-        if (
-          error.error &&
-          error.error.code &&
-          error.error.code === "ETIMEDOUT"
-        ) {
-          // probably a dns issue.
-          // let's try to disconnect
-          setTimeout(async () => {
-            try {
-              const serversCountryData = await serversCountry();
-              setServers(serversCountryData);
-              dispatch({
-                type: APP_READY
-              });
-            } catch (error) {
-              errorLog(error);
-              setTimeout(async () => {
-                try {
-                  const serversCountryData = await serversCountry();
-                  setServers(serversCountryData);
-                  dispatch({
-                    type: APP_READY
-                  });
-                } catch (error) {
-                  errorLog(error);
-                  dispatch({
-                    type: SERVICE_ERROR,
-                    payload: {
-                      error: CANT_FETCH_REMOTE
-                    }
-                  });
-                }
-              }, 2000);
-            }
-          }, 2000);
-        }
-      }
-
       subscribeEvents();
     };
 
+    // auto login
+    const autoLogin = async () => {
+      // skip auto login if not token found
+      const apiToken = ElectronStore.get("apiToken");
+      if (!apiToken) {
+        return;
+      }
+      try {
+        const serviceDetails = await getServiceDetails();
+        if (
+          serviceDetails &&
+          serviceDetails.data &&
+          serviceDetails.data.service
+        ) {
+          dispatch({
+            type: LOGIN,
+            payload: {
+              service: serviceDetails.data.service
+            }
+          });
+        } else {
+          dispatch({
+            type: LOGIN,
+            payload: {
+              service: null
+            }
+          });
+        }
+      } catch (error) {
+        errorLog(error);
+      }
+    };
+
     checkStatus();
+    autoLogin();
   }, []);
 
-  let content = <Login />;
+  let content = <Connect />;
   if (state.isReady) {
     switch (state.currentView) {
-      case CONNECTED_VIEW:
-        content = <Connected />;
-        break;
-      case CONNECT_VIEW:
-        content = <Connect servers={servers} />;
-        break;
       case LOGS_VIEW:
         content = <Logs />;
         break;
@@ -243,16 +231,16 @@ export default () => {
 
   return (
     <>
-      <div className="app">
+      <div className="app w-full h-screen flex flex-col">
         <Header />
-        {content}
+        <div className="flex-1 h-full">{content}</div>
+        <AppModal />
       </div>
       <style jsx>{`
         .app {
           overflow: hidden;
           user-select: none;
           font-family: "Inter", sans-serif;
-          height: 100%;
         }
       `}</style>
     </>

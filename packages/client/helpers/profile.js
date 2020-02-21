@@ -35,6 +35,10 @@ export const updateProfile = data => {
     mode: 0o600
   });
 
+  fs.writeFileSync(path.join(profile, "default.log"), data, {
+    mode: 0o600
+  });
+
   fs.writeFileSync(
     path.join(profile, "default.conf"),
     JSON.stringify(defaultConf),
@@ -42,6 +46,4 @@ export const updateProfile = data => {
       mode: 0o600
     }
   );
-
-  console.log(profile);
 };

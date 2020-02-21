@@ -1,13 +1,7 @@
 import ElectronStore from "../store/persist";
 import rpc from "../rpc";
 
-import {
-  LOADING,
-  CONNECT as CONNECT_VIEW,
-  CONNECTED as CONNECTED_VIEW,
-  CONNECTING as CONNECTING_VIEW,
-  LOGIN as LOGIN_VIEW
-} from "../constants/view";
+import { LOADING, CONNECT as CONNECT_VIEW } from "../constants/view";
 
 import {
   APP_READY,
@@ -21,7 +15,10 @@ import {
   SERVICE_ERROR,
   SERVICE_SENT_UPDATE,
   LOGIN,
-  LOGOUT
+  LOGOUT,
+  SHOW_MODAL,
+  CLOSE_MODAL,
+  TOGGLE_SIDEBAR
 } from "../constants/actions";
 
 export const initialAppState = {
@@ -29,15 +26,20 @@ export const initialAppState = {
   isLogged: false,
   isConnected: false,
   isConnecting: false,
+  servers: [],
   currentAction: "",
   currentView: LOADING,
+  currentServer: null,
   connectTimestamp: ElectronStore.get("connectTimestamp"),
   serverAddr: ElectronStore.get("serverAddr"),
   clientAddr: ElectronStore.get("clientAddr"),
   vpnError: null,
   serviceError: null,
   serviceDetails: null,
-  logs: ""
+  logs: "",
+  showModal: false,
+  currentModalView: null,
+  showSidebar: true
 };
 
 export const appReducer = (state, action) => {
@@ -45,7 +47,8 @@ export const appReducer = (state, action) => {
     case APP_READY:
       return {
         ...state,
-        currentView: LOGIN_VIEW,
+        currentView: CONNECT_VIEW,
+        servers: action.payload.servers,
         isReady: true
       };
 
@@ -55,6 +58,8 @@ export const appReducer = (state, action) => {
         ...state,
         currentView: CONNECT_VIEW,
         serviceDetails: action.payload.service,
+        showModal: false,
+        currentModalView: null,
         isLogged: true
       };
     }
@@ -64,17 +69,21 @@ export const appReducer = (state, action) => {
       ElectronStore.set("apiToken", null);
       return {
         ...state,
-        currentView: LOGIN_VIEW,
+        currentView: CONNECT_VIEW,
         serviceDetails: null,
-        isLogged: true
+        showModal: true,
+        currentModalView: "login",
+        isLogged: false
       };
     }
 
     case CONNECTED:
       return {
         ...state,
-        currentView: CONNECTED_VIEW,
         isConnected: true,
+        currentServer: action.payload.server
+          ? action.payload.server
+          : state.currentServer,
         isConnecting: false
       };
 
@@ -82,7 +91,7 @@ export const appReducer = (state, action) => {
       return {
         ...state,
         logs: "",
-        currentView: CONNECTING_VIEW,
+        currentServer: action.payload.server,
         vpnError: null,
         isConnecting: true
       };
@@ -90,7 +99,7 @@ export const appReducer = (state, action) => {
     case DISCONNECTED:
       return {
         ...state,
-        currentView: CONNECT_VIEW,
+        currentServer: null,
         isConnected: false
       };
 
@@ -98,6 +107,28 @@ export const appReducer = (state, action) => {
       return {
         ...state,
         currentView: action.payload.view
+      };
+
+    case TOGGLE_SIDEBAR:
+      return {
+        ...state,
+        showSidebar: !state.showSidebar
+      };
+
+    case SHOW_MODAL:
+      return {
+        ...state,
+        showModal: true,
+        currentModalView: action.payload.defaultView
+          ? action.payload.defaultView
+          : "login"
+      };
+
+    case CLOSE_MODAL:
+      return {
+        ...state,
+        showModal: false,
+        currentModalView: null
       };
 
     case SERVICE_LOG: {
@@ -151,7 +182,6 @@ export const appReducer = (state, action) => {
         return {
           ...state,
           isConnected: true,
-          currentView: CONNECTED_VIEW,
           serverAddr: action.payload.server_addr,
           clientAddr: action.payload.client_addr,
           connectTimestamp: action.payload.timestamp,
@@ -166,7 +196,6 @@ export const appReducer = (state, action) => {
         );
         return {
           ...state,
-          currentView: LOGIN_VIEW,
           connectTimestamp: null,
           isConnected: false,
           isConnecting: false,

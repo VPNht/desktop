@@ -7,3 +7,4 @@ export const SETTINGS = "SETTINGS";
 export const LOGS = "LOGS";
 export const HOME = "HOME";
 export const LOGIN = "LOGIN";
+export const SIGNUP = "SIGNUP";

@@ -35,42 +35,35 @@ export default () => {
   const [serviceLogs, showServiceLogs] = useState(false);
   const [profileLogs, showProfileLogs] = useState(true);
   const [allLogs, setLogs] = useState([]);
-  const logViewerElem = useRef();
 
   const refreshLogs = () => {
     const systemLog = systemLogs ? readSystemLog() : [];
     const serviceLog = serviceLogs ? readServiceLog() : [];
     const profileLog = profileLogs ? readProfileLog() : [];
 
-    console.log(profileLog);
-
     const allLogs = [...systemLog, ...serviceLog, ...profileLog].sort(
       (a, b) => a.date - b.date
     );
 
-    setReady(true);
     setLogs(allLogs);
-    setTimeout(() => {
-      setUpdate(false);
-      if (logViewerElem.current) {
-        console.log("scroll");
-        logViewerElem.current.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 500);
   };
 
   useEffect(() => {
-    setUpdate(true);
     refreshLogs();
   }, [profileLogs, systemLogs, serviceLogs]);
+
+  useEffect(() => {
+    setReady(true);
+    setUpdate(false);
+  }, [allLogs]);
 
   if (!isReady) {
     return <Loading />;
   }
 
   return (
-    <div>
-      <div className="container">
+    <>
+      <div className="h-full p-5 pb-20">
         <div className="header box">
           <div className="logFilter">
             <div>
@@ -114,6 +107,7 @@ export default () => {
 
           <div className="push">
             <button
+              className="text-xs"
               onClick={() => {
                 setUpdate(true);
                 flushAllLogs();
@@ -124,7 +118,7 @@ export default () => {
             </button>
           </div>
         </div>
-        <div className="logViewer">
+        <div className="logViewer" style={{ height: "85%" }}>
           {isUpdating ? (
             "Loading"
           ) : (
@@ -142,21 +136,14 @@ export default () => {
               })}
             </Highlight>
           )}
-          <div className="scrollToBottom" ref={logViewerElem} />
         </div>
       </div>
       <style jsx>{`
-        .container {
-          width: 100%;
-          padding: 30px;
-        }
-
         .logViewer {
           user-select: text;
           background-color: #007775;
           border-radius: 5px;
           font-size: 10px;
-          height: 270px;
           overflow-y: auto;
         }
 
@@ -202,6 +189,6 @@ export default () => {
           outline: none;
         }
       `}</style>
-    </div>
+    </>
   );
 };

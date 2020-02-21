@@ -56,6 +56,7 @@ func Register(engine *gin.Engine) {
 	engine.Use(Recovery)
 	engine.Use(Errors)
 
+	engine.GET("/servers", serversGet)
 	engine.GET("/events", eventsGet)
 	engine.GET("/profile", profileGet)
 	engine.POST("/profile", profilePost)

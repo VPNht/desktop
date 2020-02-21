@@ -1,6 +1,7 @@
 import fs from "fs";
 import request from "request-promise-native";
 import { authPath } from "./path";
+import { info } from "./logger";
 
 export const unixSocket =
   process.platform === "linux" || process.platform === "darwin";
@@ -67,6 +68,33 @@ export const ping = async () => {
     return false;
   }
   return true;
+};
+
+export const getAllServers = async () => {
+  const nanoSeconds = 1000000000;
+
+  const { error, result } = await callService({
+    method: "GET",
+    path: "/servers"
+  });
+
+  if (error) {
+    return false;
+  }
+  const servers = JSON.parse(result);
+  const serversList = Object.keys(servers).map(server => servers[server]);
+
+  info(`Servers list: ${serversList.length} servers found.`);
+
+  return serversList.sort((a, b) => {
+    if (a.avgPing < b.avgPing) {
+      return -1;
+    }
+    if (a.avgPing > b.avgPing) {
+      return 1;
+    }
+    return 0;
+  });
 };
 
 export const wakeup = async () => {

@@ -32,8 +32,6 @@ cd ../../
 mv build/osx/Applications/VPN.ht-darwin-x64/VPN.ht.app build/osx/Applications/
 rm -rf build/osx/Applications/VPN.ht-darwin-x64
 sleep 3
-echo "Signing client"
-codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app
 
 # Service
 cd packages/service
@@ -41,8 +39,6 @@ go get -u
 go build -v -o ../../build/vpnht-service
 cd ../../
 cp build/vpnht-service build/osx/Applications/VPN.ht.app/Contents/Resources/vpnht-service
-echo "Signing service"
-codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Resources/vpnht-service
 
 # Service Daemon
 mkdir -p build/osx/Library/LaunchDaemons
@@ -63,10 +59,45 @@ touch build/osx/Applications/VPN.ht.app/Contents/Resources/vpnht.log.1
 # Package
 chmod +x resources/macos/scripts/postinstall
 chmod +x resources/macos/scripts/preinstall
+
+echo "Signing all libs"
+codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Libraries/libEGL.dylib
+codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Libraries/libswiftshader_libEGL.dylib
+codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Libraries/libGLESv2.dylib
+codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Libraries/libswiftshader_libGLESv2.dylib
+codesign --force --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Libraries/libffmpeg.dylib
+
+echo "Signing openvpn"
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Resources/vpnht-openvpn
+
+echo "Signing service"
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Resources/vpnht-service
+
+echo "Signing all executables"
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/MacOS/VPN.ht
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Resources/crashpad_handler
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/VPN.ht\ Helper\ \(Renderer\).app/Contents/MacOS/VPN.ht\ Helper\ \(Renderer\)
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/VPN.ht\ Helper.app/Contents/MacOS/VPN.ht\ Helper
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/VPN.ht\ Helper\ \(Plugin\).app/Contents/MacOS/VPN.ht\ Helper\ \(Plugin\)
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/VPN.ht\ Helper\ \(GPU\).app/Contents/MacOS/VPN.ht\ Helper\ \(GPU\)
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel
+codesign --force --options=runtime --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app/Contents/Frameworks/Electron\ Framework.framework/Versions/A/Electron\ Framework
+codesign --force --options=runtime --entitlement ./resources/macos/entitlements.plist --deep --sign "Developer ID Application: VPN.ht Limited (GQ86HD4E57)" build/osx/Applications/VPN.ht.app
+
 cd build
 echo "Build package (pkgbuild)"
 pkgbuild --root osx --scripts ../resources/macos/scripts --sign "Developer ID Installer: VPN.ht Limited (GQ86HD4E57)" --identifier ht.vpn.pkg.VPNht --version $APP_VER --ownership recommended --install-location / Build.pkg
+
 echo "Build package (productbuild)"
 productbuild --resources ../resources/macos --distribution ../resources/macos/distribution.xml --sign "Developer ID Installer: VPN.ht Limited (GQ86HD4E57)" --version $APP_VER VPNht.pkg
 
 rm -Rf osx
+rm -Rf Build.pkg
+
+# Notarize
+if [[ ! -z "$APPLE_DEVELOPER_PASSWORD" ]]; then
+    xcrun altool --notarize-app --primary-bundle-id "ht.vpn.pkg.VPNht" --username "hello@vpn.ht" --password "$APPLE_DEVELOPER_PASSWORD" --asc-provider GQ86HD4E57 --file VPNht.pkg
+    sleep 10
+    xcrun altool --notarization-history 0 --username "hello@vpn.ht" --password "$APPLE_DEVELOPER_PASSWORD"
+fi

@@ -48,7 +48,7 @@ export const profilePath = () => {
 
 // openvpn logs
 export const vpnLogPath = () => {
-  return path.join(userDataPath(), "profiles", "default.log");
+  return path.join(profilePath(), "default.log");
 };
 
 // service (go) logs

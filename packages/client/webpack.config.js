@@ -2,7 +2,8 @@ const path = require("path");
 
 const webpack = require("webpack");
 const Copy = require("copy-webpack-plugin");
-
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const nodeEnv = process.env.NODE_ENV || "development";
 const isProd = nodeEnv === "production";
 
@@ -68,11 +69,47 @@ module.exports = [
           exclude: /node_modules/,
           loader: "babel-loader"
         },
+        // Extract all .global.css to style.css as is
         {
-          test: /\.css$/,
-          loader: "style-loader!css-loader"
+          test: /\.global\.css$/,
+          use: [
+            {
+              loader: MiniCssExtractPlugin.loader,
+              options: {
+                publicPath: "./"
+              }
+            },
+            {
+              loader: "css-loader",
+              options: {
+                sourceMap: true
+              }
+            },
+            {
+              loader: "postcss-loader"
+            }
+          ]
+        },
+        // Pipe other styles through css modules and append to style.css
+        {
+          test: /^((?!\.global).)*\.css$/,
+          use: [
+            {
+              loader: MiniCssExtractPlugin.loader
+            },
+            {
+              loader: "css-loader",
+              options: {
+                modules: true,
+                importLoaders: 1
+              }
+            }
+          ]
         }
       ]
+    },
+    optimization: {
+      minimizer: [new OptimizeCSSAssetsPlugin()]
     },
     plugins: [
       new webpack.IgnorePlugin(/.*\.js.map$/i),
@@ -87,7 +124,10 @@ module.exports = [
           from: "./assets",
           to: "./assets"
         }
-      ])
+      ]),
+      new MiniCssExtractPlugin({
+        filename: "style.css"
+      })
     ],
     target: "electron-renderer"
   }

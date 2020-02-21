@@ -11,3 +11,6 @@ export const UI_OPEN_HAMBURGER_MENU = "UI_OPEN_HAMBURGER_MENU";
 export const SERVICE_LOG = "SERVICE_LOG";
 export const LOGIN = "LOGIN";
 export const LOGOUT = "LOGOUT";
+export const SHOW_MODAL = "SHOW_MODAL";
+export const CLOSE_MODAL = "CLOSE_MODAL";
+export const TOGGLE_SIDEBAR = "TOGGLE_SIDEBAR";
