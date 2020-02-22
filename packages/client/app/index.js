@@ -45,20 +45,6 @@ if (isDev) {
 
 app.allowRendererProcessReuse = true;
 
-console.log("Disabling Chromium GPU blacklist");
-app.commandLine.appendSwitch("ignore-gpu-blacklist");
-
-console.log("Enabling HIGH DPI Support");
-app.commandLine.appendSwitch("high-dpi-support", 1);
-
-console.log("Set scale factor");
-app.commandLine.appendSwitch("force-device-scale-factor", 1);
-
-if (process.platform === "darwin") {
-  console.log("Enabling Accelerated OpenGL renderer for darwin");
-  app.commandLine.appendSwitch("enable-features", "Metal");
-}
-
 const url = `file://${resolve(
   isDev ? "target" : app.getAppPath(),
   "index.html"
