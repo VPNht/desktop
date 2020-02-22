@@ -6,28 +6,23 @@ const settings = {
   dragPan: true,
   scrollZoom: true,
   touchZoom: true,
+  doubleClickZoom: true,
   dragRotate: false,
   touchRotate: false,
-  doubleClickZoom: true,
-  minZoom: 1,
-  maxZoom: 5,
-  minPitch: 1,
-  maxPitch: 4
+  minZoom: 2,
+  maxZoom: 5
 };
 
 export default ({ connectServer }) => {
   const [state] = useContext(appContext);
-  const [viewport, setViewport] = useState({
-    bearing: 0,
-    pitch: 0
-  });
+  const [viewport, setViewport] = useState({});
 
   const goToViewport = ({ longitude, latitude, zoom = 1 }) => {
     setViewport({
       longitude,
       latitude,
       zoom,
-      transitionInterpolator: new FlyToInterpolator({ speed: 2 }),
+      transitionInterpolator: new FlyToInterpolator(),
       transitionDuration: "auto"
     });
   };
@@ -57,14 +52,14 @@ export default ({ connectServer }) => {
       goToViewport({
         longitude: state.currentServer.longitude,
         latitude: state.currentServer.latitude,
-        zoom: 5
+        zoom: 4
       });
     }
   }, [state.currentServer]);
 
   // on disconnect
   useEffect(() => {
-    if (!state.isConnected && viewport.zoom !== 10) {
+    if (!state.isConnected) {
       const closestServer = state.servers.reduce((prev, curr) => {
         return prev.distance < curr.distance ? prev : curr;
       });
@@ -145,7 +140,7 @@ export default ({ connectServer }) => {
         }}
         width="100%"
         height="100%"
-        mapStyle="mapbox://styles/mapbox/dark-v9"
+        mapStyle="mapbox://styles/mapbox/dark-v9?optimize=true"
       >
         {state.servers.map(server => buildMarker(server))}
       </ReactMapGL>

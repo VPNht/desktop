@@ -1,4 +1,7 @@
 import React, { useContext, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
+
 import appContext from "../../store";
 import { disconnect, connect } from "../../../helpers/service";
 import { downloadConfig } from "../../../helpers/openvpn";
@@ -25,11 +28,13 @@ export default () => {
         disabled={loading}
         className="bg-special-green border-gray-800 text-gray-800 font-bold py-1 px-2 rounded-md focus:outline-none text-xs"
         onClick={async () => {
+          setLoading(true);
+
           if (state.isConnected || state.isConnecting) {
             await disconnect();
+            setLoading(false);
             return;
           }
-          setLoading(true);
 
           const closestServer = state.servers.reduce((prev, curr) => {
             return prev.distance < curr.distance ? prev : curr;
@@ -57,7 +62,11 @@ export default () => {
           setLoading(false);
         }}
       >
-        {buttonTitle}
+        {loading ? (
+          <FontAwesomeIcon spin className="w-4 text-white" icon={faSyncAlt} />
+        ) : (
+          buttonTitle
+        )}
       </button>
       <style jsx>
         {`

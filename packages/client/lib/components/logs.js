@@ -7,7 +7,6 @@ import {
   readProfileLog,
   flushAllLogs
 } from "../../helpers/logger";
-import { setTimeout } from "timers";
 
 const formatNumber = number => {
   return `0${number}`.slice(-2);
@@ -44,12 +43,15 @@ export default () => {
     const allLogs = [...systemLog, ...serviceLog, ...profileLog].sort(
       (a, b) => a.date - b.date
     );
-
     setLogs(allLogs);
   };
 
   useEffect(() => {
-    refreshLogs();
+    setUpdate(true);
+    // delay the refresh by 1/2 sec
+    setTimeout(() => {
+      refreshLogs();
+    }, 500);
   }, [profileLogs, systemLogs, serviceLogs]);
 
   useEffect(() => {
@@ -72,9 +74,7 @@ export default () => {
                 type="checkbox"
                 defaultChecked={systemLogs}
                 onChange={() => {
-                  setUpdate(true);
                   showSystemLogs(!systemLogs);
-                  refreshLogs();
                 }}
               />
               <label htmlFor="appLogs">App logs</label>
@@ -96,9 +96,7 @@ export default () => {
                 type="checkbox"
                 defaultChecked={serviceLogs}
                 onChange={() => {
-                  setUpdate(true);
                   showServiceLogs(!serviceLogs);
-                  refreshLogs();
                 }}
               />
               <label htmlFor="serviceLogs">Service logs</label>
@@ -111,7 +109,6 @@ export default () => {
               onClick={() => {
                 setUpdate(true);
                 flushAllLogs();
-                refreshLogs();
               }}
             >
               Delete system logs
@@ -120,7 +117,7 @@ export default () => {
         </div>
         <div className="logViewer" style={{ height: "85%" }}>
           {isUpdating ? (
-            "Loading"
+            <div className="p-2">Building logs...</div>
           ) : (
             <Highlight language="accesslog">
               {allLogs.map(log => {
