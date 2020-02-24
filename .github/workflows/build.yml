@@ -63,6 +63,7 @@ jobs:
         run: |
           ./scripts/build/macos.sh
         env:
+          MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
           KEY_LINK: ${{ secrets.MACOS_CERT }}
           KEY_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
           APPLE_DEVELOPER_PASSWORD: ${{ secrets.APPLE_DEVELOPER_PASSWORD }}
@@ -73,6 +74,7 @@ jobs:
         run: |
           ./scripts/build/linux.sh
         env:
+          MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
           GOPATH: ${{ runner.workspace }}
 
       - name: Build Service [windows]
@@ -80,6 +82,7 @@ jobs:
         run: |
           go run ./scripts/build/windows.go
         env:
+          MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
           GOPATH: ${{ runner.workspace }}
 
       - name: Upload artifacts

@@ -2,6 +2,9 @@ import React, { useContext, useEffect, useState } from "react";
 import GoogleMapReact from "google-map-react";
 import appContext from "../store";
 
+// set by webpack
+const { MAP_API_KEY } = process.env;
+// default zoom
 const DEFAULT_ZOOM = 5;
 
 const MapMarker = ({ children, lat, lng, key, zIndex }) => {
@@ -359,7 +362,7 @@ export default ({ connectServer }) => {
               }
             ]
           }}
-          bootstrapURLKeys={{ key: "AIzaSyCfVCUz38O29N8wDhwy04k3Qgc8mTrUMMM" }}
+          bootstrapURLKeys={{ key: MAP_API_KEY }}
           zoom={viewport.zoom}
           center={{ lat: viewport.latitude, lng: viewport.longitude }}
         >
