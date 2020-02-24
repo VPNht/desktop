@@ -30,13 +30,21 @@ export default () => {
     helpTitle = (
       <div className="flex items-center">
         <Spinner className="spinnerContainer mr-2 w-4 text-gray-500" />
-        Connecting to {state.currentServer.host}.vpn.ht
+        Connecting to{" "}
+        {state.currentServer && state.currentServer.host
+          ? state.currentServer.host
+          : "hub"}
+        .vpn.ht
       </div>
     );
   }
 
   if (state.isConnected) {
-    helpTitle = `Connected to ${state.currentServer.host}.vpn.ht`;
+    helpTitle = `Connected to ${
+      state.currentServer && state.currentServer.host
+        ? state.currentServer.host
+        : "hub"
+    }.vpn.ht`;
   }
 
   return (

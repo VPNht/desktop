@@ -50,7 +50,8 @@ export default () => {
           });
 
           const config = await downloadConfig({
-            host: closestServer.host
+            host:
+              closestServer && closestServer.host ? closestServer.host : "hub"
           });
 
           await connect({

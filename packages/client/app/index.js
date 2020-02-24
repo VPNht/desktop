@@ -16,11 +16,11 @@ import fs from "fs";
 import { wakeup, ping, status, disconnect } from "../helpers/service";
 import { subscribe } from "../helpers/events";
 import trayIcons from "./tray";
-import { vpnLogPath } from "../helpers/path";
+import { vpnLogPath, profilePath } from "../helpers/path";
 import { version } from "../helpers/utils";
 import { lastRelease } from "../helpers/github";
 import { repository } from "../helpers/utils";
-import { info, error, warning } from "../helpers/logger";
+import { info, error as errorLog, warning } from "../helpers/logger";
 
 // Will be removed after Alpha phase
 import { init as initSentry } from "@sentry/electron/dist/main";
@@ -75,9 +75,22 @@ const checkService = async () => {
   const servicePing = await ping();
   const timeout = 6000;
 
-  // delete session log file
+  // make sure our path is created
+  try {
+    const fileExist = fs.existsSync(profilePath());
+    if (!fileExist) {
+      fs.mkdirSync(profilePath(), { recursive: true });
+    }
+  } catch (error) {}
+
+  // delete current file
   try {
     fs.unlinkSync(vpnLogPath());
+  } catch (error) {}
+
+  // write an empty file
+  try {
+    fs.closeSync(fs.openSync(vpnLogPath(), "w"));
   } catch (error) {}
 
   if (!servicePing) {
@@ -86,7 +99,7 @@ const checkService = async () => {
       try {
         const servicePing = await ping();
         if (!servicePing) {
-          error("unable to connect to service");
+          errorLog("unable to connect to service");
           const clickedButton = dialog.showMessageBoxSync(null, {
             type: "warning",
             buttons: ["Exit", "Retry"],
@@ -105,7 +118,7 @@ const checkService = async () => {
           }
         }
       } catch (error) {
-        error(error);
+        errorLog(error);
 
         if (error.statusCode && error.statusCode === 401) {
           dialog.showMessageBox(
@@ -132,7 +145,7 @@ const checkService = async () => {
   const { statusCode: wakeUpStatusCode, wakeup: isWakeUp } = await wakeup();
 
   if (wakeUpStatusCode === 401) {
-    error("Can't wakeup the service (401)");
+    errorLog("Can't wakeup the service (401)");
     dialog.showMessageBox(
       null,
       {
@@ -151,7 +164,7 @@ const checkService = async () => {
   }
 
   if (isWakeUp) {
-    error("Can't wakeup the service (isWakeUp)");
+    errorLog("Can't wakeup the service (isWakeUp)");
     app.quit();
     return;
   }
@@ -164,8 +177,16 @@ const checkService = async () => {
   serviceEvents.on("message", async data => {
     const evt = JSON.parse(data);
     if (evt.type === "output") {
-      const logPath = vpnLogPath();
-      fs.appendFileSync(logPath, evt.data.output + "\n");
+      try {
+        const pathExist = fs.existsSync(profilePath());
+        const logPath = vpnLogPath();
+        if (!pathExist) {
+          fs.mkdirSync(profilePath(), { recursive: true });
+        }
+        fs.appendFileSync(logPath, evt.data.output + "\n");
+      } catch (error) {
+        errorLog(error);
+      }
     } else if (evt.type === "connected") {
       isConnected = true;
       updateHamburgerMenu();
@@ -337,7 +358,7 @@ const openMainWin = async () => {
 
   mainWindow.webContents.on("did-finish-load", () => {
     if (!mainWindow) {
-      error('"mainWindow" is not defined');
+      errorLog('"mainWindow" is not defined');
       throw new Error('"mainWindow" is not defined');
     }
     if (process.env.START_MINIMIZED) {
@@ -426,7 +447,20 @@ const buildTrayMenu = () => {
   menuItems = [...menuItems, { label: "Exit", click: () => app.quit() }];
   const contextMenu = Menu.buildFromTemplate(menuItems);
 
+  // windows context is shown only on right click
   tray.setContextMenu(contextMenu);
+
+  // we show app if we left click
+  // right click will show context (on windows)
+  if (process.platform !== "darwin") {
+    tray.on("click", function() {
+      openMainWin();
+    });
+
+    tray.on("double-click", function() {
+      openMainWin();
+    });
+  }
 };
 
 const updateHamburgerMenu = () => {
@@ -491,7 +525,7 @@ const updateHamburgerMenu = () => {
       {
         label: "Sign out",
         click: () => {
-          rpc.emit("logout");
+          rpc.emit("logout", null);
         }
       }
     ];

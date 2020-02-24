@@ -11,7 +11,12 @@ import { connect, disconnect } from "../../helpers/service";
 import { downloadConfig } from "../../helpers/openvpn";
 import { updateProfile } from "../../helpers/profile";
 
-import { CONNECTING, CURRENT_ACTION, SHOW_MODAL } from "../constants/actions";
+import {
+  DISCONNECTED,
+  CONNECTING,
+  CURRENT_ACTION,
+  SHOW_MODAL
+} from "../constants/actions";
 
 import {
   DOWNLOAD_CONFIG,
@@ -25,6 +30,10 @@ export default () => {
   const connectServer = async host => {
     if (state.isConnected) {
       await disconnect();
+      // prevent currentServer to fail
+      dispatch({
+        type: DISCONNECTED
+      });
     }
 
     // is loggued?

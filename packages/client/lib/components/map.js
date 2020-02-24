@@ -1,29 +1,30 @@
 import React, { useContext, useEffect, useState } from "react";
-import ReactMapGL, { Marker, FlyToInterpolator } from "react-map-gl";
+import GoogleMapReact from "google-map-react";
 import appContext from "../store";
 
-const settings = {
-  dragPan: true,
-  scrollZoom: true,
-  touchZoom: true,
-  doubleClickZoom: true,
-  dragRotate: false,
-  touchRotate: false,
-  minZoom: 2,
-  maxZoom: 5
+const DEFAULT_ZOOM = 5;
+
+const MapMarker = ({ children, lat, lng, key, zIndex }) => {
+  return (
+    <div lat={lat} lng={lng} key={key} style={{ zIndex, position: "relative" }}>
+      {children}
+    </div>
+  );
 };
 
 export default ({ connectServer }) => {
   const [state] = useContext(appContext);
-  const [viewport, setViewport] = useState({});
+  const [viewport, setViewport] = useState({
+    zoom: DEFAULT_ZOOM,
+    longitude: null,
+    latitude: null
+  });
 
-  const goToViewport = ({ longitude, latitude, zoom = 1 }) => {
+  const goToViewport = ({ longitude, latitude, zoom = DEFAULT_ZOOM }) => {
     setViewport({
       longitude,
       latitude,
-      zoom,
-      transitionInterpolator: new FlyToInterpolator(),
-      transitionDuration: "auto"
+      zoom
     });
   };
 
@@ -36,7 +37,7 @@ export default ({ connectServer }) => {
       goToViewport({
         longitude: closestServer.longitude,
         latitude: closestServer.latitude,
-        zoom: 3
+        zoom: DEFAULT_ZOOM
       });
     }
   }, []);
@@ -52,7 +53,7 @@ export default ({ connectServer }) => {
       goToViewport({
         longitude: state.currentServer.longitude,
         latitude: state.currentServer.latitude,
-        zoom: 4
+        zoom: DEFAULT_ZOOM
       });
     }
   }, [state.currentServer]);
@@ -66,12 +67,16 @@ export default ({ connectServer }) => {
       goToViewport({
         longitude: closestServer.longitude,
         latitude: closestServer.latitude,
-        zoom: 3
+        zoom: DEFAULT_ZOOM
       });
     }
   }, [state.isConnected]);
 
   const buildMarker = server => {
+    if (!server || !server.host) {
+      return;
+    }
+
     const isConnectedTo =
       state.currentServer &&
       state.isConnected &&
@@ -96,10 +101,11 @@ export default ({ connectServer }) => {
     }
 
     return (
-      <Marker
+      <MapMarker
+        zIndex={isConnectedTo || isConnectingTo ? 2000 : 1000}
         key={`server-${server.host}`}
-        longitude={server.longitude}
-        latitude={server.latitude}
+        lng={server.longitude}
+        lat={server.latitude}
       >
         <svg
           className={
@@ -115,7 +121,6 @@ export default ({ connectServer }) => {
           style={{
             cursor: "pointer",
             fill: isConnectedTo ? "#00A6A3" : "#3182CE",
-            zIndex: isConnectedTo || isConnectingTo ? "2000" : "1000",
             stroke: "none"
           }}
           onClick={() => {
@@ -124,26 +129,243 @@ export default ({ connectServer }) => {
         >
           <path d="M20.2,15.7L20.2,15.7c1.1-1.6,1.8-3.6,1.8-5.7c0-5.6-4.5-10-10-10S2,4.5,2,10c0,2,0.6,3.9,1.6,5.4c0,0.1,0.1,0.2,0.2,0.3 c0,0,0.1,0.1,0.1,0.2c0.2,0.3,0.4,0.6,0.7,0.9c2.6,3.1,7.4,7.6,7.4,7.6s4.8-4.5,7.4-7.5c0.2-0.3,0.5-0.6,0.7-0.9 C20.1,15.8,20.2,15.8,20.2,15.7z" />
         </svg>
-      </Marker>
+      </MapMarker>
     );
   };
 
   return (
     <div className="w-full h-full overflow-hidden">
-      <ReactMapGL
-        className="mapbox"
-        {...settings}
-        {...viewport}
-        mapboxApiAccessToken="pk.eyJ1IjoidnBuaHQiLCJhIjoiZmRlMDdmMDM2NDA5N2QxZTYzODE1OTliZGYxMGJhYTcifQ.FX9R5iheGniyeBsPhOEH3g"
-        onViewportChange={newViewPort => {
-          setViewport({ ...viewport, ...newViewPort });
-        }}
-        width="100%"
-        height="100%"
-        mapStyle="mapbox://styles/mapbox/dark-v9?optimize=true"
-      >
-        {state.servers.map(server => buildMarker(server))}
-      </ReactMapGL>
+      {viewport.latitude && viewport.longitude && (
+        <GoogleMapReact
+          options={{
+            zoomControl: false,
+            mapTypeControl: false,
+            scaleControl: false,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: false,
+            styles: [
+              {
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#212121"
+                  }
+                ]
+              },
+              {
+                elementType: "labels.icon",
+                stylers: [
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#757575"
+                  }
+                ]
+              },
+              {
+                elementType: "labels.text.stroke",
+                stylers: [
+                  {
+                    color: "#212121"
+                  }
+                ]
+              },
+              {
+                featureType: "administrative",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#757575"
+                  },
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                featureType: "administrative.country",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#9e9e9e"
+                  }
+                ]
+              },
+              {
+                featureType: "administrative.locality",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#bdbdbd"
+                  }
+                ]
+              },
+              {
+                featureType: "poi",
+                stylers: [
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                featureType: "poi",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#757575"
+                  }
+                ]
+              },
+              {
+                featureType: "poi.park",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#181818"
+                  }
+                ]
+              },
+              {
+                featureType: "poi.park",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#616161"
+                  }
+                ]
+              },
+              {
+                featureType: "poi.park",
+                elementType: "labels.text.stroke",
+                stylers: [
+                  {
+                    color: "#1b1b1b"
+                  }
+                ]
+              },
+              {
+                featureType: "road",
+                stylers: [
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                featureType: "road",
+                elementType: "geometry.fill",
+                stylers: [
+                  {
+                    color: "#2c2c2c"
+                  }
+                ]
+              },
+              {
+                featureType: "road",
+                elementType: "labels.icon",
+                stylers: [
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                featureType: "road",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#8a8a8a"
+                  }
+                ]
+              },
+              {
+                featureType: "road.arterial",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#373737"
+                  }
+                ]
+              },
+              {
+                featureType: "road.highway",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#3c3c3c"
+                  }
+                ]
+              },
+              {
+                featureType: "road.highway.controlled_access",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#4e4e4e"
+                  }
+                ]
+              },
+              {
+                featureType: "road.local",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#616161"
+                  }
+                ]
+              },
+              {
+                featureType: "transit",
+                stylers: [
+                  {
+                    visibility: "off"
+                  }
+                ]
+              },
+              {
+                featureType: "transit",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#757575"
+                  }
+                ]
+              },
+              {
+                featureType: "water",
+                elementType: "geometry",
+                stylers: [
+                  {
+                    color: "#000000"
+                  }
+                ]
+              },
+              {
+                featureType: "water",
+                elementType: "labels.text.fill",
+                stylers: [
+                  {
+                    color: "#3d3d3d"
+                  }
+                ]
+              }
+            ]
+          }}
+          bootstrapURLKeys={{ key: "AIzaSyCfVCUz38O29N8wDhwy04k3Qgc8mTrUMMM" }}
+          zoom={viewport.zoom}
+          center={{ lat: viewport.latitude, lng: viewport.longitude }}
+        >
+          {state.servers.map(server => buildMarker(server))}
+        </GoogleMapReact>
+      )}
     </div>
   );
 };

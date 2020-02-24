@@ -80,108 +80,114 @@ export default () => {
       });
 
       profileEvents.on("message", async data => {
-        const evt = JSON.parse(data);
+        try {
+          const evt = JSON.parse(data);
 
-        if (evt.type === "wakeup") {
-          profileEvents.send("awake");
-        }
+          if (evt.type === "wakeup") {
+            profileEvents.send("awake");
+          }
 
-        switch (evt.type) {
-          case "update":
-            dispatch({
-              type: SERVICE_SENT_UPDATE,
-              payload: {
-                ...evt.data
-              }
-            });
-            break;
-          case "output":
-            dispatch({
-              type: SERVICE_LOG,
-              payload: {
-                log: evt.data.output
-              }
-            });
-            break;
-          case "auth_error":
-            dispatch({
-              type: VPN_ERROR,
-              payload: {
-                error: AUTH_FAILED
-              }
-            });
-            break;
-          case "inactive":
-            dispatch({
-              type: VPN_ERROR,
-              payload: {
-                error: DISCONNECT_INACTIVE
-              }
-            });
-            break;
-          case "timeout_error":
-            dispatch({
-              type: VPN_ERROR,
-              payload: {
-                error: TIMEOUT_CONNECT
-              }
-            });
-            break;
+          switch (evt.type) {
+            case "update":
+              dispatch({
+                type: SERVICE_SENT_UPDATE,
+                payload: {
+                  ...evt.data
+                }
+              });
+              break;
+            case "output":
+              dispatch({
+                type: SERVICE_LOG,
+                payload: {
+                  log: evt.data.output
+                }
+              });
+              break;
+            case "auth_error":
+              dispatch({
+                type: VPN_ERROR,
+                payload: {
+                  error: AUTH_FAILED
+                }
+              });
+              break;
+            case "inactive":
+              dispatch({
+                type: VPN_ERROR,
+                payload: {
+                  error: DISCONNECT_INACTIVE
+                }
+              });
+              break;
+            case "timeout_error":
+              dispatch({
+                type: VPN_ERROR,
+                payload: {
+                  error: TIMEOUT_CONNECT
+                }
+              });
+              break;
+          }
+        } catch (error) {
+          errorLog(error);
         }
       });
     };
 
     const checkStatus = async () => {
-      const serviceStatus = await ping();
-      if (!serviceStatus) {
-        errorLog("Service not available (frontend)");
-        dispatch({
-          type: SERVICE_ERROR,
-          payload: {
-            error: SERVICE_NOT_AVAILABLE
-          }
-        });
-        return;
-      }
-
-      let allServers;
       try {
+        const serviceStatus = await ping();
+        if (!serviceStatus) {
+          errorLog("Service not available (frontend)");
+          dispatch({
+            type: SERVICE_ERROR,
+            payload: {
+              error: SERVICE_NOT_AVAILABLE
+            }
+          });
+          return;
+        }
+
+        let allServers;
+
         allServers = await getAllServers();
         dispatch({
           type: APP_READY,
           payload: { servers: allServers }
         });
+
+        // are we connected or not?
+        const vpnStatus = await status();
+        if (vpnStatus) {
+          info("Current status: Connected");
+          // last server
+          const lastServer = ElectronStore.get("lastServer");
+          dispatch({
+            type: CONNECTED,
+            payload: {
+              server: allServers.find(server => server.host === lastServer)
+            }
+          });
+        } else {
+          info("Current status: Not Connected");
+        }
+
+        subscribeEvents();
       } catch (error) {
         errorLog(error);
       }
-
-      // are we connected or not?
-      const vpnStatus = await status();
-      if (vpnStatus) {
-        info("Current status: Connected");
-        // last server
-        const lastServer = ElectronStore.get("lastServer");
-        dispatch({
-          type: CONNECTED,
-          payload: {
-            server: allServers.find(server => server.host === lastServer)
-          }
-        });
-      } else {
-        info("Current status: Not Connected");
-      }
-
-      subscribeEvents();
     };
 
     // auto login
     const autoLogin = async () => {
-      // skip auto login if not token found
-      const apiToken = ElectronStore.get("apiToken");
-      if (!apiToken) {
-        return;
-      }
       try {
+        // skip auto login if not token found
+        const apiToken = ElectronStore.get("apiToken");
+        if (!apiToken) {
+          return;
+        }
+
         const serviceDetails = await getServiceDetails();
         if (
           serviceDetails &&

@@ -7,11 +7,15 @@ import (
 	"sync"
 	"time"
 	"net"
+	"fmt"
 
 
 	"github.com/vpnht/desktop/packages/service/profile"
 	"github.com/sirupsen/logrus"
 	"github.com/tatsushid/go-fastping"
+
+	"github.com/getsentry/sentry-go"
+
 )
 
 type Server struct {
@@ -144,6 +148,9 @@ func PingServers() {
 		"online": onlineServers,
 		"all": allServers,
 	}).Info("servers: Ping completed")
+
+
+	sentry.CaptureMessage(fmt.Sprintf("Found %d servers online", onlineServers))
 
 	return
 }

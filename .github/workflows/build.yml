@@ -121,23 +121,65 @@ jobs:
 
       - run: find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
 
-      - run: mkdir files
-      - run: mv ./windows-latest/VPNht-Setup.exe ./files/VPNht-${{ steps.get_version.outputs.VERSION }}.exe
-      - run: mv ./macOS-latest/VPNht.pkg ./files/VPNht-${{ steps.get_version.outputs.VERSION }}.pkg
-      - run: mv ./ubuntu-latest/ubuntu.deb ./files/VPNht-${{ steps.get_version.outputs.VERSION }}.deb
-      - run: mv ./ubuntu-latest/redhat.rpm ./files/VPNht-${{ steps.get_version.outputs.VERSION }}.rpm
-
-      - run: find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
-
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         id: create_release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ github.ref }}
-          files: |
-            ./files/*
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset [macOS]
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./macOS-latest/VPNht.pkg
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.pkg
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [ubuntu]
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ubuntu-latest/ubuntu.deb
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.deb
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [redhat]
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ubuntu-latest/redhat.rpm
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.rpm
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset [windows]
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows-latest/VPNht-Setup.exe
+          asset_name: VPNht-${{ steps.get_version.outputs.VERSION }}.exe
+          asset_content_type: application/octet-stream
 
   publish-sdk:
     runs-on: ubuntu-latest
@@ -168,6 +210,7 @@ jobs:
 
       - run: yarn publish --new-version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
         if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
         working-directory: ./packages/sdk-js
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

@@ -19,7 +19,6 @@ import { appReducer, initialAppState } from "./reducers/appReducer";
 import AppFrame from "./containers/app";
 
 import "./app.global.css";
-import "mapbox-gl/dist/mapbox-gl.css";
 
 // On Linux, the default zoom was somehow changed with Electron 3 (or maybe 2).
 // Setting zoom factor to 1.2 brings back the normal default size

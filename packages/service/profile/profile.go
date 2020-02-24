@@ -376,6 +376,9 @@ func (p *Profile) update() {
 			Type: "connected",
 		}
 		evt.Init()
+		logrus.WithFields(logrus.Fields{
+			"profile_id": p.Id,
+		}).Info("profile: Connected")
 	} else {
 		evt := event.Event{
 			Type: "disconnected",

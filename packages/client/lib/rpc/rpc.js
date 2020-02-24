@@ -11,7 +11,7 @@ export default class Client {
       setTimeout(() => {
         this.id = window.__rpcId;
         this.ipc.on(this.id, this.ipcListener);
-        this.emitter.emit("ready");
+        this.emitter.emit("ready", null);
       }, 0);
     } else {
       this.ipc.on("init", (ev, uid) => {
@@ -21,7 +21,7 @@ export default class Client {
         window.__rpcId = uid;
         this.id = uid;
         this.ipc.on(uid, this.ipcListener);
-        this.emitter.emit("ready");
+        this.emitter.emit("ready", null);
       });
     }
   }

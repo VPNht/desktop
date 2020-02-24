@@ -71,8 +71,6 @@ export const ping = async () => {
 };
 
 export const getAllServers = async () => {
-  const nanoSeconds = 1000000000;
-
   const { error, result } = await callService({
     method: "GET",
     path: "/servers"
@@ -141,7 +139,7 @@ export const connect = async ({ username, password, data }) => {
       id: "default",
       username,
       password,
-      reconnect: true,
+      reconnect: false,
       timeout: true,
       data
     }

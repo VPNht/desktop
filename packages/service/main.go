@@ -25,6 +25,8 @@ import (
 	"github.com/vpnht/desktop/packages/service/servers"
 	"github.com/vpnht/desktop/packages/service/utils"
 	"github.com/vpnht/desktop/packages/service/watch"
+
+	"github.com/getsentry/sentry-go"
 )
 
 func main() {
@@ -33,6 +35,10 @@ func main() {
 	if *devPtr {
 		constants.Development = true
 	}
+
+	sentry.Init(sentry.ClientOptions{
+		Dsn: "https://5cac3e9abc124d6a9b2b1a9dbbcbd96d@sentry.io/2765469",
+	})
 
 	err := utils.PidInit()
 	if err != nil {
@@ -162,5 +168,8 @@ func main() {
 		prfl.Stop()
 	}
 
+	time.Sleep(750 * time.Millisecond)
+
+	sentry.Flush(time.Second * 5)
 	time.Sleep(750 * time.Millisecond)
 }

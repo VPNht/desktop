@@ -35,6 +35,7 @@ export const readServiceLog = () => {
 };
 
 export const writeSystemLog = (lvl, log) => {
+  console.log(`[${lvl}] ${log}`);
   const path = systemLogPath();
   const fileExist = fs.existsSync(path);
   if (!fileExist) {
