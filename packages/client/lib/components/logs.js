@@ -65,7 +65,7 @@ export default () => {
 
   return (
     <>
-      <div className="h-full p-5 pb-20">
+      <div className="h-full p-5">
         <div className="header box">
           <div className="logFilter">
             <div>

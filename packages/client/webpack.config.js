@@ -5,7 +5,6 @@ const Copy = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const nodeEnv = process.env.NODE_ENV || "development";
-const mapAPiKey = process.env.MAP_API_KEY || "";
 const isProd = nodeEnv === "production";
 
 module.exports = [
@@ -117,8 +116,7 @@ module.exports = [
 
       new webpack.DefinePlugin({
         "process.env": {
-          NODE_ENV: JSON.stringify(nodeEnv),
-          MAP_API_KEY: JSON.stringify(mapAPiKey)
+          NODE_ENV: JSON.stringify(nodeEnv)
         }
       }),
       new Copy([

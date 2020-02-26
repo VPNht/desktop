@@ -4,6 +4,10 @@
 
 @import "tailwindcss/utilities";
 
+html {
+  font-family: Inter, Arial, sans-serif;
+}
+
 .no-drag {
   -webkit-app-region: no-drag;
 }

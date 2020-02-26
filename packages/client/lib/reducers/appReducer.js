@@ -18,7 +18,8 @@ import {
   LOGOUT,
   SHOW_MODAL,
   CLOSE_MODAL,
-  TOGGLE_SIDEBAR
+  TOGGLE_SIDEBAR,
+  UPDATE_SERVERS_LIST
 } from "../constants/actions";
 
 export const initialAppState = {
@@ -113,6 +114,12 @@ export const appReducer = (state, action) => {
       return {
         ...state,
         showSidebar: !state.showSidebar
+      };
+
+    case UPDATE_SERVERS_LIST:
+      return {
+        ...state,
+        servers: action.payload.servers
       };
 
     case SHOW_MODAL:

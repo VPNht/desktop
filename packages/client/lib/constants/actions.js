@@ -14,3 +14,4 @@ export const LOGOUT = "LOGOUT";
 export const SHOW_MODAL = "SHOW_MODAL";
 export const CLOSE_MODAL = "CLOSE_MODAL";
 export const TOGGLE_SIDEBAR = "TOGGLE_SIDEBAR";
+export const UPDATE_SERVERS_LIST = "UPDATE_SERVERS_LIST";

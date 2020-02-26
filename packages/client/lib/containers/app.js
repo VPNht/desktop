@@ -17,6 +17,7 @@ import {
   SERVICE_ERROR,
   CONNECTED,
   SERVICE_SENT_UPDATE,
+  UPDATE_SERVERS_LIST,
   SERVICE_LOG,
   VPN_ERROR,
   VIEW,
@@ -56,6 +57,7 @@ const serviceGql = gql`
 export default () => {
   const [state, dispatch] = useContext(appContext);
   const getServiceDetails = useMutation(serviceGql);
+  const isMac = /Mac/.test(navigator.userAgent);
 
   useEffect(() => {
     const subscribeEvents = () => {
@@ -128,6 +130,18 @@ export default () => {
                 }
               });
               break;
+            case "servers_list":
+              {
+                const allServers = await getAllServers();
+                if (allServers && allServers.length > 0) {
+                  dispatch({
+                    type: UPDATE_SERVERS_LIST,
+                    payload: { servers: allServers }
+                  });
+                }
+              }
+
+              break;
           }
         } catch (error) {
           errorLog(error);
@@ -149,9 +163,7 @@ export default () => {
           return;
         }
 
-        let allServers;
-
-        allServers = await getAllServers();
+        const allServers = await getAllServers();
         dispatch({
           type: APP_READY,
           payload: { servers: allServers }
@@ -237,16 +249,18 @@ export default () => {
 
   return (
     <>
-      <div className="app w-full h-screen flex flex-col">
+      <div className="vpnht w-full h-screen">
         <Header />
-        <div className="flex-1 h-full">{content}</div>
+        <div className="flex-1 h-content">{content}</div>
         <AppModal />
       </div>
       <style jsx>{`
-        .app {
-          overflow: hidden;
+        .vpnht {
           user-select: none;
-          font-family: "Inter", sans-serif;
+        }
+
+        .h-content {
+          height: calc(100vh - ${isMac ? "63px" : "34px"});
         }
       `}</style>
     </>

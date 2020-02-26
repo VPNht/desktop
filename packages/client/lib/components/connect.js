@@ -27,7 +27,7 @@ import {
 export default () => {
   const [state, dispatch] = useContext(appContext);
 
-  const connectServer = async host => {
+  const connectServer = async ip => {
     if (state.isConnected) {
       await disconnect();
       // prevent currentServer to fail
@@ -61,7 +61,7 @@ export default () => {
     dispatch({
       type: CONNECTING,
       payload: {
-        server: state.servers.find(server => server.host === host)
+        server: state.servers.find(server => server.ip === ip)
       }
     });
 
@@ -72,11 +72,11 @@ export default () => {
       }
     });
 
-    ElectronStore.set("lastServer", host);
+    ElectronStore.set("lastServer", ip);
 
     // DOWNLOAD REMOTE CONFIG
     const config = await downloadConfig({
-      host
+      host: ip
     });
 
     dispatch({

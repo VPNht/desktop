@@ -51,7 +51,9 @@ export default () => {
 
           const config = await downloadConfig({
             host:
-              closestServer && closestServer.host ? closestServer.host : "hub"
+              closestServer && closestServer.host
+                ? closestServer.ip
+                : "hub.vpn.ht"
           });
 
           await connect({

@@ -1,7 +1,9 @@
 import fs from "fs";
 import request from "request-promise-native";
 import { authPath } from "./path";
-import { info } from "./logger";
+import { info, error as errorLog } from "./logger";
+
+import defaultServers from "../servers.json";
 
 export const unixSocket =
   process.platform === "linux" || process.platform === "darwin";
@@ -77,22 +79,27 @@ export const getAllServers = async () => {
   });
 
   if (error) {
-    return false;
+    errorLog(error);
+    return defaultServers;
   }
+
   const servers = JSON.parse(result);
   const serversList = Object.keys(servers).map(server => servers[server]);
-
   info(`Servers list: ${serversList.length} servers found.`);
 
-  return serversList.sort((a, b) => {
-    if (a.avgPing < b.avgPing) {
-      return -1;
-    }
-    if (a.avgPing > b.avgPing) {
-      return 1;
-    }
-    return 0;
-  });
+  if (serversList && serversList.length > 0) {
+    return serversList.sort((a, b) => {
+      if (a.avgPing < b.avgPing) {
+        return -1;
+      }
+      if (a.avgPing > b.avgPing) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+
+  return defaultServers;
 };
 
 export const wakeup = async () => {

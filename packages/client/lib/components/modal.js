@@ -104,6 +104,9 @@ const ModalApp = () => {
       </div>
 
       <style jsx>{`
+        .modal {
+          z-index: 10000;
+        }
         .text-special-green-dark {
           color: #007775;
         }

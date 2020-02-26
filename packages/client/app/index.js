@@ -323,12 +323,14 @@ const openMainWin = async () => {
     autoHideMenuBar: true,
     titleBarStyle: "hiddenInset",
     fullscreen: false,
-    width: 960,
-    height: 480,
     show: false,
     sandbox: true,
+    width: 960,
     minWidth: process.platform === "darwin" ? 810 : 860,
-    minHeight: 410,
+    maxWidth: 960,
+    height: 500,
+    minHeight: 500,
+    maxHeight: 500,
     backgroundColor: "#00A6A3",
     webPreferences: {
       nodeIntegration: true

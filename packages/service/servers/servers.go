@@ -9,13 +9,12 @@ import (
 	"net"
 	"fmt"
 
-
+	"github.com/vpnht/desktop/packages/service/event"
 	"github.com/vpnht/desktop/packages/service/profile"
 	"github.com/sirupsen/logrus"
 	"github.com/tatsushid/go-fastping"
 
 	"github.com/getsentry/sentry-go"
-
 )
 
 type Server struct {
@@ -95,6 +94,9 @@ func PingServersTicker() {
 }
 
 func PingServers() {
+	// before we ping we'll update
+	UpdateServersList()
+
 	// max 25 concurrent ping
 	totalWorkers := 25
 
@@ -108,9 +110,6 @@ func PingServers() {
 	if isConnected {
 		return
 	}
-
-	// before we ping we'll update
-	UpdateServersList()
 
 	semaphoreChan := make(chan struct{}, totalWorkers)
 	defer close(semaphoreChan)
@@ -149,6 +148,11 @@ func PingServers() {
 		"all": allServers,
 	}).Info("servers: Ping completed")
 
+	// send event to frontend
+	evt := event.Event{
+		Type: "servers_list",
+	}
+	evt.Init()
 
 	sentry.CaptureMessage(fmt.Sprintf("Found %d servers online", onlineServers))
 
