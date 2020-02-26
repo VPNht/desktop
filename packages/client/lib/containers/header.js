@@ -51,7 +51,7 @@ export default () => {
     <>
       <div
         className={`titlebar flex draggable pb-1 text-center text-gray-500 ${
-          isMac ? "pt-8" : "pt-1"
+          isMac ? "pt-8" : "pt-1 leading-snug"
         } items-end`}
       >
         <div className="w-1/4 text-left ml-2">
@@ -64,7 +64,7 @@ export default () => {
             <BackButton />
           )}
         </div>
-        <div className="w-2/4 ">
+        <div className="w-2/4">
           <div className="inline-flex w-full">
             {state.isConnected ? (
               <div className="bg-gray-300 border-gray-800 text-green-500 py-1 px-2 rounded-l-md focus:outline-none text-xs w-1/3 font-semibold">

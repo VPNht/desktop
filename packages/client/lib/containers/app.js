@@ -260,7 +260,7 @@ export default () => {
         }
 
         .h-content {
-          height: calc(100vh - ${isMac ? "63px" : "34px"});
+          height: calc(100vh - ${isMac ? "63px" : "33px"});
         }
       `}</style>
     </>
