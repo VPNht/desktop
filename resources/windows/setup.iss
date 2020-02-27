@@ -47,7 +47,6 @@ procedure PreInstall();
 begin
     Exec('net.exe', 'stop vpnht', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('taskkill.exe', '/F /IM VPNht.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('gpupdate.exe', '/force', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 [Icons]
@@ -57,7 +56,6 @@ Name: "{commonstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [InstallDelete]
-Type: filesandordirs; Name: "{userappdata}\vpn.ht"
 Type: filesandordirs; Name: "{app}"
 
 [Run]
