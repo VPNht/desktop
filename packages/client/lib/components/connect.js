@@ -1,6 +1,5 @@
 import React, { useContext } from "react";
 
-import Loading from "./loading";
 import ElectronStore from "../store/persist";
 import appContext from "../store";
 

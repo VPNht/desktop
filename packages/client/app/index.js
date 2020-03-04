@@ -26,7 +26,7 @@ import { info, error as errorLog, warning } from "../helpers/logger";
 import { init as initSentry } from "@sentry/electron/dist/main";
 
 import {
-  // SETTINGS as SETTINGS_VIEW,
+  SETTINGS as SETTINGS_VIEW,
   LOGS as LOGS_VIEW,
   CONNECT as CONNECT_VIEW
 } from "../lib/constants/view";
@@ -500,7 +500,23 @@ const updateHamburgerMenu = () => {
           showUpdateDialogNoVersion();
         }
       }
-    },
+    }
+  ];
+
+  if (isLogged) {
+    menuItems = [
+      ...menuItems,
+      {
+        label: "Settings",
+        click: () => {
+          rpc.emit("change view", SETTINGS_VIEW);
+        }
+      }
+    ];
+  }
+
+  menuItems = [
+    ...menuItems,
     {
       type: "separator"
     }

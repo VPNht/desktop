@@ -4,6 +4,7 @@ import { authPath } from "./path";
 import { info, error as errorLog } from "./logger";
 
 import defaultServers from "../servers.json";
+import ElectronStore from "../lib/store/persist";
 
 export const unixSocket =
   process.platform === "linux" || process.platform === "darwin";
@@ -139,6 +140,11 @@ export const getProfile = async () => {
 };
 
 export const connect = async ({ username, password, data }) => {
+  const autoReconnect =
+    ElectronStore.get("autoReconnect") !== null
+      ? ElectronStore.get("autoReconnect")
+      : true;
+
   const { error, result } = await callService({
     method: "POST",
     path: "/profile",
@@ -146,7 +152,7 @@ export const connect = async ({ username, password, data }) => {
       id: "default",
       username,
       password,
-      reconnect: false,
+      reconnect: autoReconnect,
       timeout: true,
       data
     }
