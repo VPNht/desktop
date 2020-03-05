@@ -93,7 +93,7 @@ export const readProfileLog = () => {
     const strippedData = stripLastNewLine(data);
     const logs = [
       ...strippedData.matchAll(
-        /([a-zA-Z]{3} [a-zA-Z]{3} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4}) ([\s\S]*?(?=\n.*?([a-zA-Z]{3} [a-zA-Z]{3} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4})|$))/g
+        /([a-zA-Z]{3} [a-zA-Z]{3} .?[0-9]{1} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4}) ([\s\S]*?(?=\n.*?([a-zA-Z]{3} [a-zA-Z]{3} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4})|$))/gm
       )
     ];
     return logs.map(log => {

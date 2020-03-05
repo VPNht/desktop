@@ -1,17 +1,39 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
-const signtool = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.18362.0\\x64\\signtool.exe"
+const signtool = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.17763.0\\x86\\signtool.exe"
 
 func main() {
 
+	// create certificate
+	certEncoded := os.Getenv("WINDOWS_SSL")
+	certPath := fmt.Sprintf("%s/certificate.pfx", os.Getenv("TEMP"))
+
+	data, err := base64.StdEncoding.DecodeString(certEncoded)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ioutil.WriteFile(certPath, data, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	data, err = ioutil.ReadFile(certPath)
+	if err != nil {
+		panic(err)
+	}
+
 	// CLEANUP
-	err := os.Remove(filepath.Join("resources", "windows", "openvpn",
+	err = os.Remove(filepath.Join("resources", "windows", "openvpn",
 		"openvpn-install-2.4.6-I602.exe"))
 	if err != nil && !os.IsNotExist(err) {
 		panic(err)
@@ -48,6 +70,23 @@ func main() {
 		panic(err)
 	}
 
+	// sign tun
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"tuntap.exe",
+	)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
 
 	// SERVICE
 	err = os.Chdir("../../../packages/service")
@@ -64,6 +103,24 @@ func main() {
 	}
 
 	cmd = exec.Command("go", "build", "-o", "../../build/win/vpnht-service.exe", "-v", "-ldflags", "-H windowsgui")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	// sign service
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"../../build/win/vpnht-service.exe",
+	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -125,6 +182,24 @@ func main() {
 		panic(err)
 	}
 
+	// sign client
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"VPNht.exe",
+	)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
 	err = os.Chdir(filepath.Join("..", "..", "..",
 		"resources", "windows", "post_install"))
 	if err != nil {
@@ -132,6 +207,24 @@ func main() {
 	}
 
 	cmd = exec.Command("go", "build", "-o", "../../../build/win/post_install.exe", "-v")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	// sign post_install
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"../../../build/win/post_install.exe",
+	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -152,6 +245,24 @@ func main() {
 		panic(err)
 	}
 
+	// sign pre_uninstall
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"../../../build/win/pre_uninstall.exe",
+	)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
 	err = os.Chdir(filepath.Join(".."))
 	if err != nil {
 		panic(err)
@@ -159,6 +270,24 @@ func main() {
 
 	cmd = exec.Command("C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe",
 		"setup.iss")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	// sign installer
+	cmd = exec.Command(signtool,
+		"sign",
+		"/a",
+		"/f", certPath,
+		"/tr", "http://timestamp.digicert.com",
+		"/td", "sha256",
+		"/fd", "sha256",
+		"../../build/VPNht-Setup.exe",
+	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

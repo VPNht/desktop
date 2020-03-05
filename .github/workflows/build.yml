@@ -83,6 +83,7 @@ jobs:
           go run ./scripts/build/windows.go
         env:
           MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
+          WINDOWS_SSL: ${{ secrets.WINDOWS_SSL }}
           GOPATH: ${{ runner.workspace }}
 
       - name: Upload artifacts
