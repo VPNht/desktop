@@ -68,6 +68,28 @@ Return a `Boolean` with `true` when the VPN Client is installed and ready.
 
 Open the VPN.ht Desktop client and detach it from the opening process.
 
+### `signup({ email, password })`
+
+Create a new customer and return a `Promise`.
+
+### `signin({ email, password })`
+
+Check the credentials and return a `Promise` with an auth token to be used on the API.
+
+### `pickPlan({ plan, processor, authToken })`
+
+Pick a plan and create an invoice and return a `Promise` with a direct payment link.
+
+```
+plan = "MONTHLY" || "ANNUALLY"
+processor = "PAYMENTWALL" || "PAYPAL" || "CRYPTO"
+authToken = token collected from signup or signin
+```
+
+### `isActiveService({ authToken })`
+
+Return a `Promise` with `true` if the customer have an active service (paid)
+
 ### `install()`
 
 Return a `Promise` with an [`EventEmitter`](https://nodejs.org/api/events.html#events_class_eventemitter) who expose the following events name.
