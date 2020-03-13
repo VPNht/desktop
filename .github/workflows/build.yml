@@ -126,14 +126,25 @@ jobs:
       - run: find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
 
       - run: mkdir ./dist
+        if: startsWith(github.ref, 'refs/tags/v')
+
       - run: mv ./macOS-latest/VPNht.pkg ./dist/VPNht-${{ steps.get_version.outputs.VERSION }}.pkg
+        if: startsWith(github.ref, 'refs/tags/v')
+
       - run: mv ./ubuntu-latest/ubuntu.deb ./dist/VPNht-${{ steps.get_version.outputs.VERSION }}.deb
+        if: startsWith(github.ref, 'refs/tags/v')
+
       - run: mv ./ubuntu-latest/redhat.rpm ./dist/VPNht-${{ steps.get_version.outputs.VERSION }}.rpm
+        if: startsWith(github.ref, 'refs/tags/v')
+
       - run: mv ./windows-latest/VPNht-Setup.exe ./dist/VPNht-${{ steps.get_version.outputs.VERSION }}.exe
+        if: startsWith(github.ref, 'refs/tags/v')
 
       - run: find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
+        if: startsWith(github.ref, 'refs/tags/v')
 
       - uses: jakejarvis/s3-sync-action@master
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           args: --acl public-read --follow-symlinks --delete
         env:
