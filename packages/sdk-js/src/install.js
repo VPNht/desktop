@@ -17,8 +17,14 @@ if (process.platform === "win32") {
   command = "start";
 }
 
+if (process.platform === "linux") {
+  command = "pkexec";
+}
+
 export default async installPath => {
   let realPath = installPath;
+  let isDebian = false;
+
   if (!installPath) {
     realPath = fs.mkdtempSync(path.join(os.tmpdir(), "vpnht-"));
   }
@@ -32,7 +38,7 @@ export default async installPath => {
     }
 
     if (process.platform === "linux") {
-      const isDebian = fs.existsSync("/etc/debian_version");
+      isDebian = fs.existsSync("/etc/debian_version");
       if (isDebian) {
         extension = "deb";
       } else {
@@ -44,7 +50,7 @@ export default async installPath => {
 
     progress(
       request(
-        `https://github.com/${repository}/releases/download/v${appVersion}/VPNht-${appVersion}.${extension}`
+        `https://s3.amazonaws.com/vpnhtsoftware/${appVersion}/VPNht-${appVersion}.${extension}`
       )
     )
       .on("progress", function(state) {
@@ -55,7 +61,21 @@ export default async installPath => {
       })
       .on("end", function() {
         installEmitter.emit("downloaded", { path: realPath, file: outFile });
-        execFileSync(command, [outFile]);
+
+        if (process.platform === "linux") {
+          if (isDebian) {
+            execFileSync(command, ["apt", "install", "-f", "--yes", outFile]);
+          } else {
+            execFileSync(command, [
+              "yum",
+              "--nogpgcheck",
+              "localinstall",
+              outFile
+            ]);
+          }
+        } else {
+          execFileSync(command, [outFile]);
+        }
 
         const checkInterval = setInterval(() => {
           if (isInstalled()) {
