@@ -50,7 +50,7 @@ export default async installPath => {
 
     progress(
       request(
-        `https://s3.amazonaws.com/vpnhtsoftware/${appVersion}/VPNht-${appVersion}.${extension}`
+        `http://vpnhtsoftware.s3.amazonaws.com/${appVersion}/VPNht-${appVersion}.${extension}`
       )
     )
       .on("progress", function(state) {

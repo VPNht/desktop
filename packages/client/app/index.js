@@ -63,6 +63,13 @@ initSentry({
 
 app.allowRendererProcessReuse = true;
 
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  info("Instance already running");
+  app.quit();
+}
+
 const url = `file://${resolve(
   isDev ? "target" : app.getAppPath(),
   "index.html"
@@ -600,6 +607,13 @@ app.on("window-all-closed", function() {
     if (app.dock) {
       app.dock.hide();
     }
+  }
+});
+
+app.on("second-instance", () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
   }
 });
 
