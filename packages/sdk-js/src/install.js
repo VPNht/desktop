@@ -7,15 +7,10 @@ import request from "request-promise-native";
 import progress from "request-progress";
 import isInstalled from "./is-installed";
 import lastVersion from "./last-version";
-import { repository } from "../package.json";
 
 const installEmitter = new EventEmitter();
 
 let command = "open";
-
-if (process.platform === "win32") {
-  command = "start";
-}
 
 if (process.platform === "linux") {
   command = "pkexec";
@@ -50,7 +45,7 @@ export default async installPath => {
 
     progress(
       request(
-        `http://vpnhtsoftware.s3.amazonaws.com/${appVersion}/VPNht-${appVersion}.${extension}`
+        `https://vpnhtsoftware.s3.amazonaws.com/${appVersion}/VPNht-${appVersion}.${extension}`
       )
     )
       .on("progress", function(state) {
@@ -73,6 +68,21 @@ export default async installPath => {
               outFile
             ]);
           }
+        } else if (process.platform === "win32") {
+          let tries = 5;
+          const trySpawn = () => {
+            try {
+              tries--;
+              execFileSync(outFile);
+            } catch (err) {
+              if ((err.code === "ETXTBSY" || err.code === "EBUSY") && tries) {
+                setTimeout(() => {
+                  trySpawn();
+                }, 2000);
+              }
+            }
+          };
+          trySpawn();
         } else {
           execFileSync(command, [outFile]);
         }
