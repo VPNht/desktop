@@ -22,9 +22,6 @@ import { lastRelease } from "../helpers/github";
 import { repository } from "../helpers/utils";
 import { info, error as errorLog, warning } from "../helpers/logger";
 
-// Will be removed after Alpha phase
-import { init as initSentry } from "@sentry/electron/dist/main";
-
 import {
   SETTINGS as SETTINGS_VIEW,
   LOGS as LOGS_VIEW,
@@ -46,20 +43,6 @@ info(`Initializing ${version}`);
 if (isDev) {
   info("Running in development mode");
 }
-
-// Will be run only during Alpha
-// Will be removed soon
-crashReporter.start({
-  productName: "Desktop",
-  companyName: "VPN.ht",
-  submitURL:
-    "https://sentry.io/api/2765469/minidump/?sentry_key=5cac3e9abc124d6a9b2b1a9dbbcbd96d",
-  uploadToServer: true
-});
-
-initSentry({
-  dsn: "https://5cac3e9abc124d6a9b2b1a9dbbcbd96d@sentry.io/2765469"
-});
 
 app.allowRendererProcessReuse = true;
 

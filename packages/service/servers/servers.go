@@ -3,34 +3,31 @@ package servers
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
-	"net"
-	"fmt"
 
-	"github.com/vpnht/desktop/packages/service/event"
-	"github.com/vpnht/desktop/packages/service/profile"
 	"github.com/sirupsen/logrus"
 	"github.com/tatsushid/go-fastping"
-
-	"github.com/getsentry/sentry-go"
+	"github.com/vpnht/desktop/packages/service/event"
+	"github.com/vpnht/desktop/packages/service/profile"
 )
 
 type Server struct {
-	Online		           bool             `json:"online"`
-	Host				   string           `json:"host"`
-	IP				   	   string           `json:"ip"`
-	Country				   string           `json:"country"`
-	CountryName			   string           `json:"countryName"`
-	Distance			   float64          `json:"distance"`
-	Latitude			   float64          `json:"latitude"`
-	Longitude			   float64          `json:"longitude"`
-	City				   string           `json:"city"`
-	Region				   string           `json:"regionName"`
-	SpeedTest			   string           `json:"speedtest"`
-	AvgPing			   	   time.Duration    `json:"avgPing"`
-	Updated 			   time.Time
+	Online      bool          `json:"online"`
+	Host        string        `json:"host"`
+	IP          string        `json:"ip"`
+	Country     string        `json:"country"`
+	CountryName string        `json:"countryName"`
+	Distance    float64       `json:"distance"`
+	Latitude    float64       `json:"latitude"`
+	Longitude   float64       `json:"longitude"`
+	City        string        `json:"city"`
+	Region      string        `json:"regionName"`
+	SpeedTest   string        `json:"speedtest"`
+	AvgPing     time.Duration `json:"avgPing"`
+	Updated     time.Time
 }
 
 var (
@@ -79,18 +76,18 @@ func PingServersTicker() {
 	quit := make(chan struct{})
 	go func() {
 		for {
-		   select {
-			case <- ticker.C:
+			select {
+			case <-ticker.C:
 				PingServers()
-			case <- quit:
+			case <-quit:
 				ticker.Stop()
 				return
 			}
 		}
-	 }()
+	}()
 
-	 // trigger it right now
-	 PingServers()
+	// trigger it right now
+	PingServers()
 }
 
 func PingServers() {
@@ -145,7 +142,7 @@ func PingServers() {
 
 	logrus.WithFields(logrus.Fields{
 		"online": onlineServers,
-		"all": allServers,
+		"all":    allServers,
 	}).Info("servers: Ping completed")
 
 	// send event to frontend
@@ -153,8 +150,6 @@ func PingServers() {
 		Type: "servers_list",
 	}
 	evt.Init()
-
-	sentry.CaptureMessage(fmt.Sprintf("Found %d servers online", onlineServers))
 
 	return
 }
@@ -215,7 +210,7 @@ func UpdateServersList() {
 		Servers.Lock()
 		Servers.m[value.Host] = value
 		Servers.Unlock()
-	  }
+	}
 
 	return
 }

@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/dropbox/godropbox/errors"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/vpnht/desktop/packages/service/auth"
 	"github.com/vpnht/desktop/packages/service/autoclean"
 	"github.com/vpnht/desktop/packages/service/constants"
@@ -25,8 +25,6 @@ import (
 	"github.com/vpnht/desktop/packages/service/servers"
 	"github.com/vpnht/desktop/packages/service/utils"
 	"github.com/vpnht/desktop/packages/service/watch"
-
-	"github.com/getsentry/sentry-go"
 )
 
 func main() {
@@ -35,10 +33,6 @@ func main() {
 	if *devPtr {
 		constants.Development = true
 	}
-
-	sentry.Init(sentry.ClientOptions{
-		Dsn: "https://5cac3e9abc124d6a9b2b1a9dbbcbd96d@sentry.io/2765469",
-	})
 
 	err := utils.PidInit()
 	if err != nil {
@@ -159,6 +153,11 @@ func main() {
 		}()
 		server.Shutdown(webCtx)
 		server.Close()
+
+		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			logrus.Info("Cleaning socket")
+			syscall.Unlink("/var/run/vpnht.sock")
+		}
 	}()
 
 	time.Sleep(250 * time.Millisecond)
@@ -168,8 +167,5 @@ func main() {
 		prfl.Stop()
 	}
 
-	time.Sleep(750 * time.Millisecond)
-
-	sentry.Flush(time.Second * 5)
 	time.Sleep(750 * time.Millisecond)
 }

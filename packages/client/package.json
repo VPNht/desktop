@@ -23,7 +23,6 @@
     "@fortawesome/free-brands-svg-icons": "^5.12.1",
     "@fortawesome/free-solid-svg-icons": "^5.12.1",
     "@fortawesome/react-fontawesome": "^0.1.8",
-    "@sentry/electron": "^1.2.0",
     "@shopify/react-form-state": "^0.11.17",
     "@shopify/react-graphql": "^6.0.6",
     "apollo-boost": "^0.4.7",

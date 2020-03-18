@@ -2,8 +2,6 @@ import React, { useReducer } from "react";
 import { webFrame } from "electron";
 import { render } from "react-dom";
 import isDev from "electron-is-dev";
-// Will be removed after Alpha phase
-import { init as initSentry } from "@sentry/electron/dist/renderer";
 
 import ApolloClient from "apollo-client";
 import { InMemoryCache } from "apollo-cache-inmemory";
@@ -25,10 +23,6 @@ import "./app.global.css";
 if (process.platform === "linux") {
   webFrame.setZoomFactor(1.2);
 }
-
-initSentry({
-  dsn: "https://5cac3e9abc124d6a9b2b1a9dbbcbd96d@sentry.io/2765469"
-});
 
 const initialState = {};
 
