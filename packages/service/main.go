@@ -45,6 +45,10 @@ func main() {
 		"version": constants.Version,
 	}).Info("main: Service starting")
 
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		syscall.Unlink("/var/run/vpnht.sock")
+	}
+
 	defer func() {
 		panc := recover()
 		if panc != nil {
@@ -155,7 +159,6 @@ func main() {
 		server.Close()
 
 		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			logrus.Info("Cleaning socket")
 			syscall.Unlink("/var/run/vpnht.sock")
 		}
 	}()
