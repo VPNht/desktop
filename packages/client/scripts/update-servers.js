@@ -13,8 +13,8 @@ const init = async () => {
     if (data && data.length > 0) {
       fs.writeFileSync(
         path.join(__dirname, "..", "servers.json"),
-        JSON.stringify(
-          data
+        JSON.stringify([
+          ...data
             .map(server => {
               return { ...server, distance: null };
             })
@@ -26,8 +26,14 @@ const init = async () => {
                 return 1;
               }
               return 0;
-            })
-        ),
+            }),
+          {
+            host: "hub",
+            ip: "hub.vpn.ht",
+            latitude: 51.52320000000001,
+            longitude: -0.09610000000000696
+          }
+        ]),
         {
           mode: 0o600
         }

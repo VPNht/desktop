@@ -175,6 +175,10 @@ export default ({ connectServer }) => {
           <TileLayer url="./static/mapTiles/{z}/{x}/{y}.jpg" />
           {state.servers
             .filter((server, sIndex, sArray) => {
+              if (server.host === "hub") {
+                return false;
+              }
+
               if (
                 (state.isConnected || state.isConnecting) &&
                 state.currentServer &&

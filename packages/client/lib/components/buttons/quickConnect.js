@@ -40,6 +40,12 @@ export default () => {
             return prev.distance < curr.distance ? prev : curr;
           });
 
+          // select hub
+          if (closestServer.distance === null) {
+            closestServer.host = "hub";
+            closestServer.ip = "hub.vpn.ht";
+          }
+
           dispatch({
             type: CONNECTING,
             payload: {
