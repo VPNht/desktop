@@ -42,7 +42,8 @@ export function Login() {
     resolver: zodResolver(signupSchema),
   });
 
-  const activeForm = isLogin ? loginForm : signupForm;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activeForm = (isLogin ? loginForm : signupForm) as ReturnType<typeof useForm<any>>;
 
   const onSubmit = async (data: LoginFormData | SignupFormData) => {
     try {
@@ -99,7 +100,7 @@ export function Login() {
               />
               {activeForm.formState.errors.email && (
                 <p className="mt-1 text-sm text-danger-500">
-                  {activeForm.formState.errors.email.message}
+                  {String(activeForm.formState.errors.email.message)}
                 </p>
               )}
             </div>
@@ -140,7 +141,7 @@ export function Login() {
               )}
               {activeForm.formState.errors.password && (
                 <p className="mt-1 text-sm text-danger-500">
-                  {activeForm.formState.errors.password.message}
+                  {String(activeForm.formState.errors.password.message)}
                 </p>
               )}
             </div>

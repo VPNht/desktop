@@ -6,36 +6,41 @@ import {
   Power,
   Download,
   Upload,
-  Clock,
   Globe,
   Loader2,
 } from "lucide-react";
 import { useConnectionStore, useServerStore } from "@stores";
-import { getCountryFlag, formatDuration, formatBytes } from "@utils/helpers";
+import { getCountryFlag, formatBytes } from "@utils/helpers";
 import { cn } from "@utils/helpers";
-import type { Server } from "@types";
+
+function ConnectionTimer({ connectedAt }: { connectedAt: Date }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - connectedAt.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [connectedAt]);
+
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+
+  return (
+    <span className="text-sm text-gray-400 font-mono">
+      {hours > 0 ? `${hours}h ` : ""}{minutes.toString().padStart(2, "0")}:{seconds.toString().padStart(2, "0")}
+    </span>
+  );
+}
 
 export function Home() {
   const { t } = useTranslation();
   const { status, server, connectedAt, bytesReceived, bytesSent, connect, disconnect } =
     useConnectionStore();
   const { servers } = useServerStore();
-  const [elapsed, setElapsed] = useState(0);
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
-  const isDisconnected = status === "disconnected";
-
-  // Update elapsed time
-  useEffect(() => {
-    if (!connectedAt) {
-      setElapsed(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setElapsed(Date.now() - connectedAt.getTime());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [connectedAt]);
 
   // Find best server (lowest latency)
   const bestServer = servers
@@ -62,17 +67,6 @@ export function Home() {
         return "text-red-500";
       default:
         return "text-gray-500";
-    }
-  };
-
-  const getStatusBg = () => {
-    switch (status) {
-      case "connected":
-        return "bg-success-500";
-      case "connecting":
-        return "bg-yellow-500";
-      default:
-        return "bg-gray-500";
     }
   };
 
@@ -116,8 +110,13 @@ export function Home() {
             </p>
             {server && isConnected && (
               <p className="text-gray-400 mt-2">
-                Connected to {server.name}, {server.country}{" "}
-                {getCountryFlag(server.countryCode)}
+                Connected to {server.name}, {server.country} {getCountryFlag(server.countryCode)}
+              </p>
+            )}
+            {/* Connection Timer — added below status */}
+            {isConnected && connectedAt && (
+              <p className="text-gray-400 mt-1">
+                <ConnectionTimer connectedAt={connectedAt} />
               </p>
             )}
           </div>
@@ -146,8 +145,7 @@ export function Home() {
           {/* Best Server Hint */}
           {!isConnected && bestServer && (
             <p className="text-sm text-gray-500 mt-4">
-              Quick connect to {getCountryFlag(bestServer.countryCode)}{" "}
-              {bestServer.name} ({bestServer.latency}ms)
+              Quick connect to {getCountryFlag(bestServer.countryCode)} {bestServer.name} ({bestServer.latency}ms)
             </p>
           )}
         </div>
@@ -155,17 +153,6 @@ export function Home() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Duration */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="w-5 h-5 text-gray-400" />
-            <p className="text-sm text-gray-400">{t("connection.duration")}</p>
-          </div>
-          <p className="text-xl font-semibold text-white">
-            {isConnected ? formatDuration(elapsed) : "--"}
-          </p>
-        </div>
-
         {/* Download */}
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
           <div className="flex items-center gap-3 mb-2">
