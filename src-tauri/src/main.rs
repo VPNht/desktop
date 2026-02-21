@@ -1,8 +1,12 @@
 mod commands;
 mod config;
 mod error;
+mod killswitch;
 mod storage;
 mod vpn;
+
+use killswitch::KillSwitch;
+use tracing::{info, warn};
 
 use std::sync::Arc;
 use tauri::{
@@ -76,10 +80,28 @@ fn main() {
             commands::store_secure,
             commands::retrieve_secure,
             commands::delete_secure,
+            commands::enable_killswitch,
+            commands::disable_killswitch,
         ])
         .setup(|app| {
+            // Initialize logging
+            #[cfg(not(debug_assertions))]
+            {
+                if let Err(e) = logging::init_logging(app) {
+                    eprintln!("Failed to initialize logging: {}", e);
+                }
+            }
+            
             // Initialize secure storage
             storage::init_secure_storage(app)?;
+            
+            // Initialize Kill Switch
+            let mut killswitch = KillSwitch::new();
+            if let Err(e) = killswitch.enable() {
+                warn!("Failed to enable Kill Switch: {}", e);
+            }
+            app.manage(killswitch);
+            
             // Register ConnectionManager as managed state
             app.manage(Arc::new(Mutex::new(ConnectionManager::new())));
             Ok(())
