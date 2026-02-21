@@ -36,10 +36,26 @@ fn run_privileged_command(cmd: &str, args: &[&str]) -> Result<std::process::Outp
 #[cfg(target_os = "macos")]
 fn run_privileged_command(cmd: &str, args: &[&str]) -> Result<std::process::Output, String> {
     // macOS uses osascript for privilege escalation
-    let mut full_args = vec!["-e", &format!("do shell script \"{} {}\" with administrator privileges", cmd, args.join(" "))];
+    // Build shell-escaped command to prevent injection attacks
+    fn shell_escape(s: &str) -> String {
+        // Use single quotes, escaping any embedded single quotes
+        // This is the safest shell escaping method
+        format!("'{}'", s.replace("'", "'\\''"))
+    }
+    
+    let mut command_parts = vec![shell_escape(cmd)];
+    for arg in args {
+        command_parts.push(shell_escape(arg));
+    }
+    
+    let script = format!(
+        "do shell script {} with administrator privileges",
+        command_parts.join(" ")
+    );
     
     Command::new("osascript")
-        .args(&full_args)
+        .arg("-e")
+        .arg(&script)
         .output()
         .map_err(|e| format!("Failed to run privileged command: {}", e))
 }
