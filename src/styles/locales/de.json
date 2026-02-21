@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "VPNht",
+    "tagline": "Sicher. Schnell. Privat."
+  },
+  "nav": {
+    "home": "Startseite",
+    "servers": "Server",
+    "map": "Karte",
+    "settings": "Einstellungen",
+    "logout": "Abmelden"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "signup": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Kein Konto?",
+    "haveAccount": "Bereits ein Konto?",
+    "loggingIn": "Anmelden...",
+    "signingUp": "Konto wird erstellt...",
+    "errors": {
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordTooShort": "Passwort muss mindestens 8 Zeichen lang sein",
+      "passwordsMatch": "Passwörter stimmen nicht überein",
+      "loginFailed": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.",
+      "signupFailed": "Kontoerstellung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    }
+  },
+  "connection": {
+    "status": {
+      "connected": "Verbunden",
+      "connecting": "Verbinden...",
+      "disconnected": "Getrennt",
+      "disconnecting": "Trennen...",
+      "error": "Verbindungsfehler"
+    },
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "currentServer": "Aktueller Server",
+    "yourIP": "Ihre IP",
+    "protected": "Geschützt",
+    "exposed": "Exponiert",
+    "duration": "Verbindungszeit",
+    "dataTransferred": "Übertragene Daten"
+  },
+  "servers": {
+    "title": "Server-Standorte",
+    "search": "Server suchen...",
+    "allRegions": "Alle Regionen",
+    "favorites": "Favoriten",
+    "latency": "Latenz",
+    "load": "Auslastung",
+    "protocols": "Protokolle",
+    "features": {
+      "p2p": "P2P unterstützt",
+      "streaming": "Streaming-optimiert",
+      "doubleVpn": "Doppeltes VPN"
+    },
+    "sort": {
+      "name": "Name",
+      "latency": "Latenz",
+      "load": "Auslastung"
+    }
+  },
+  "map": {
+    "title": "Server-Karte",
+    "clickToConnect": "Klicken Sie auf einen Server zum Verbinden",
+    "serverCount": "{{count}} Server verfügbar",
+    "yourLocation": "Ihr Standort"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "general": {
+      "title": "Allgemein",
+      "language": "Sprache",
+      "startup": "Beim Starten öffnen",
+      "minimize": "In Taskleiste minimieren",
+      "theme": {
+        "title": "Design",
+        "light": "Hell",
+        "dark": "Dunkel",
+        "system": "System"
+      }
+    },
+    "connection": {
+      "title": "Verbindung",
+      "autoConnect": "Automatisch verbinden",
+      "killSwitch": "Kill Switch",
+      "killSwitchDesc": "Internet blockieren, wenn VPN trennt",
+      "dnsLeak": "DNS-Leck-Schutz",
+      "dnsLeakDesc": "Unsere DNS-Server verwenden",
+      "ipv6": "IPv6 deaktivieren",
+      "protocol": "Protokoll",
+      "protocols": {
+        "wireguard": "WireGuard",
+        "openvpn_udp": "OpenVPN (UDP)",
+        "openvpn_tcp": "OpenVPN (TCP)"
+      }
+    },
+    "advanced": {
+      "title": "Erweitert",
+      "obfuscation": "Verschleierung",
+      "obfuscationDesc": "VPN-Traffic verbergen",
+      "customDns": "Benutzerdefiniertes DNS",
+      "customDnsDesc": "Eigene DNS-Server verwenden",
+      "mtu": "MTU-Größe"
+    }
+  }
+}
