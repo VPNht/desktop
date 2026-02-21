@@ -1,9 +1,12 @@
+mod api;
 mod commands;
 mod config;
 mod error;
 mod killswitch;
 mod storage;
 mod vpn;
+
+use api::ApiClient;
 
 use killswitch::KillSwitch;
 use tracing::{info, warn};
@@ -104,6 +107,9 @@ fn main() {
             
             // Register ConnectionManager as managed state
             app.manage(Arc::new(Mutex::new(ConnectionManager::new())));
+            
+            // Register ApiClient as managed state
+            app.manage(Arc::new(ApiClient::new("https://api.vpnht.com")));
             Ok(())
         })
         .run(generate_context!())

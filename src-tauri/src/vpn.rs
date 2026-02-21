@@ -6,6 +6,17 @@ use tokio::time::sleep;
 use crate::error::Result;
 use crate::config::WireGuardConfig;
 
+// Interface name sanitization
+fn sanitize_interface_name(name: &str) -> Result<String, String> {
+    if name.len() > 15 {
+        return Err("Interface name too long".into());
+    }
+    if !name.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        return Err("Invalid interface name".into());
+    }
+    Ok(name.to_string())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ConnectionStatus {
     Disconnected,
@@ -22,9 +33,15 @@ pub struct ConnectionManager {
 
 impl ConnectionManager {
     pub fn new() -> Self {
+        let interface_name = Self::get_interface_name();
+        // Validate the interface name
+        if let Err(e) = sanitize_interface_name(&interface_name) {
+            panic!("Invalid interface name: {}", e);
+        }
+        
         Self {
             status: ConnectionStatus::Disconnected,
-            interface_name: Self::get_interface_name(),
+            interface_name,
         }
     }
 
@@ -100,10 +117,10 @@ impl ConnectionManager {
     }
 
     fn validate_config(&self, config: &WireGuardConfig) -> bool {
-        if config.interface.private_key.is_empty() {
+        if config.interface.private_key.is_empty() || config.interface.private_key.len() > 256 {
             return false;
         }
-        if config.peer.public_key.is_empty() {
+        if config.peer.public_key.is_empty() || config.peer.public_key.len() > 256 {
             return false;
         }
         if config.peer.endpoint.is_empty() {
@@ -114,16 +131,18 @@ impl ConnectionManager {
 
     async fn apply_config(&self, config: &WireGuardConfig) -> Result<()> {
         let config_str = config.to_wg_quick_format();
+        let safe_interface_name = sanitize_interface_name(&self.interface_name)
+            .map_err(|e| format!("Invalid interface name: {}", e))?;
 
         #[cfg(target_os = "linux")]
         {
             // Write config to /tmp and use wg-quick
-            let config_path = format!("/tmp/vpnht-{}.conf", self.interface_name);
+            let config_path = format!("/tmp/vpnht-{}.conf", safe_interface_name);
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
 
             let output = Command::new("wg-quick")
-                .args([&"up".to_string(), self.interface_name.clone()])
+                .args([&"up".to_string(), safe_interface_name])
                 .output()
                 .map_err(|e| format!("Failed to start WireGuard: {}", e))?;
 
@@ -136,12 +155,12 @@ impl ConnectionManager {
         #[cfg(target_os = "macos")]
         {
             // macOS uses wireguard-go
-            let config_path = format!("/tmp/vpnht-{}.conf", self.interface_name);
+            let config_path = format!("/tmp/vpnht-{}.conf", safe_interface_name);
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
 
             let output = Command::new("wireguard-go")
-                .args([&self.interface_name])
+                .args([&safe_interface_name])
                 .output()
                 .map_err(|e| format!("Failed to start WireGuard: {}", e))?;
 
@@ -152,7 +171,7 @@ impl ConnectionManager {
 
             // Set configuration
             Command::new("wg")
-                .args([&"setconf".to_string(), self.interface_name.clone(), config_path])
+                .args([&"setconf".to_string(), safe_interface_name, config_path])
                 .output()
                 .map_err(|e| format!("Failed to set config: {}", e))?;
         }
@@ -160,7 +179,7 @@ impl ConnectionManager {
         #[cfg(target_os = "windows")]
         {
             // Windows uses wireguard.exe
-            let config_path = format!("{}\\AppData\\Local\\Temp\\vpnht.conf", std::env::var("USERPROFILE").unwrap_or_default());
+            let config_path = format!("{}\AppData\Local\Temp\vpnht.conf", std::env::var("USERPROFILE").unwrap_or_default());
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
 
@@ -179,10 +198,13 @@ impl ConnectionManager {
     }
 
     async fn remove_interface(&self) -> Result<()> {
+        let safe_interface_name = sanitize_interface_name(&self.interface_name)
+            .map_err(|e| format!("Invalid interface name: {}", e))?;
+
         #[cfg(target_os = "linux")]
         {
             let output = Command::new("wg-quick")
-                .args([&"down".to_string(), self.interface_name.clone()])
+                .args([&"down".to_string(), safe_interface_name])
                 .output()
                 .map_err(|e| format!("Failed to stop WireGuard: {}", e))?;
 
@@ -195,7 +217,7 @@ impl ConnectionManager {
         #[cfg(target_os = "macos")]
         {
             let output = Command::new("wireguard-go")
-                .args([&"-down".to_string(), &self.interface_name])
+                .args([&"-down".to_string(), &safe_interface_name])
                 .output()
                 .map_err(|e| format!("Failed to stop WireGuard: {}", e))?;
 
@@ -208,7 +230,7 @@ impl ConnectionManager {
         #[cfg(target_os = "windows")]
         {
             let output = Command::new("wireguard.exe")
-                .args([&"/uninstalltunnelservice".to_string(), self.interface_name.clone()])
+                .args([&"/uninstalltunnelservice".to_string(), safe_interface_name])
                 .output()
                 .map_err(|e| format!("Failed to uninstall WireGuard service: {}", e))?;
 

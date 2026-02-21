@@ -27,7 +27,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    immer((set, get) => ({
+    immer((set, _get) => ({
       user: null,
       tokens: null,
       isAuthenticated: false,
@@ -126,8 +126,8 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
+        // DO NOT persist tokens — they are stored in OS keychain via SecureStorage
       }),
     }
   )

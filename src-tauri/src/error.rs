@@ -1,4 +1,5 @@
 use std::fmt;
+use serde::Serialize;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -25,22 +26,42 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
-impl From<AppError> for String {
+impl From<AppError> for tauri::InvokeError {
     fn from(err: AppError) -> Self {
-        err.to_string()
+        tauri::InvokeError::from(err.to_string())
     }
 }
 
-impl From<&str> for AppError {
-    fn from(msg: &str) -> Self {
-        AppError::Connection(msg.to_string())
+impl Serialize for AppError {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
-impl From<String> for AppError {
-    fn from(msg: String) -> Self {
-        AppError::Connection(msg)
+impl From<reqwest::Error> for AppError {
+    fn from(err: reqwest::Error) -> Self {
+        AppError::Network(err.to_string())
     }
 }
 
-pub type Result<T> = std::result::Result<T, String>;
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        AppError::Config(err.to_string())
+    }
+}
+
+impl From<std::io::Error> for AppError {
+    fn from(err: std::io::Error) -> Self {
+        AppError::Platform(err.to_string())
+    }
+}
+
+impl From<keyring::Error> for AppError {
+    fn from(err: keyring::Error) -> Self {
+        AppError::Storage(err.to_string())
+    }
+}
+
+pub type Result<T> = std::result::Result<T, AppError>;
