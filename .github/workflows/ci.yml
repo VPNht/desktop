@@ -47,7 +47,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: dist/
@@ -104,7 +104,7 @@ jobs:
         with:
           tauriScript: npx tauri
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: tauri-${{ matrix.platform }}
           path: |
