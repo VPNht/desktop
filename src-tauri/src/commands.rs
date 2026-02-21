@@ -7,7 +7,7 @@ use tauri::{command, State};
 use tokio::sync::Mutex;
 
 use crate::config::{Server, WireGuardConfig, generate_wireguard_config};
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::storage::SecureStorage;
 use crate::vpn::{ConnectionManager, ConnectionStatus};
 
