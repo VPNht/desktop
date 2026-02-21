@@ -225,7 +225,7 @@ jobs:
           find . -type f ! -name '*.sha256' -exec sha256sum {} \; > ../checksums.txt
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: VPNht Desktop v${{ env.VERSION }}
@@ -281,7 +281,7 @@ jobs:
           EOF
 
       - name: Upload updater JSON
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           files: updates.json
