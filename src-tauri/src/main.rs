@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod crypto;
+mod health;
 mod killswitch;
 mod split_tunnel;
 mod vpn;
@@ -13,6 +14,7 @@ use wireguard::{VpnStatus, WireGuardManager};
 use killswitch::{KillSwitch, KillSwitchState};
 use vpn::auto_reconnect::{AutoReconnectConfig, AutoReconnectManager, ReconnectState};
 use split_tunnel::{SplitTunnelConfig, SplitTunnelManager, SplitTunnelState};
+use health::{HealthMetrics, HealthMonitor};
 
 // App state that persists across commands
 pub struct AppState {
@@ -20,6 +22,7 @@ pub struct AppState {
     killswitch: Arc<Mutex<Box<dyn KillSwitch>>>,
     auto_reconnect: Arc<Mutex<AutoReconnectManager>>,
     split_tunnel: Arc<Mutex<SplitTunnelManager>>,
+    health_monitor: Arc<Mutex<HealthMonitor>>,
 }
 
 impl Default for AppState {
@@ -29,6 +32,7 @@ impl Default for AppState {
             killswitch: Arc::new(Mutex::new(killswitch::create_killswitch())),
             auto_reconnect: Arc::new(Mutex::new(AutoReconnectManager::new(AutoReconnectConfig::default()))),
             split_tunnel: Arc::new(Mutex::new(SplitTunnelManager::new())),
+            health_monitor: Arc::new(Mutex::new(HealthMonitor::new())),
         }
     }
 }
@@ -172,6 +176,12 @@ async fn disable_split_tunnel(state: State<'_, AppState>) -> Result<String, Stri
     Ok("Split tunnel disabled".to_string())
 }
 
+#[tauri::command]
+async fn get_health_metrics(state: State<'_, AppState>) -> Result<HealthMetrics, String> {
+    let mut monitor = state.health_monitor.lock().map_err(|e| e.to_string())?;
+    Ok(monitor.collect())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -194,6 +204,7 @@ fn main() {
             get_split_tunnel_state,
             set_split_tunnel_config,
             disable_split_tunnel,
+            get_health_metrics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

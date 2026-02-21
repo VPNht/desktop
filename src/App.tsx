@@ -10,6 +10,17 @@ type VpnStatus =
   | { type: 'Disconnecting' }
   | { type: 'Error'; message: string };
 
+interface HealthMetrics {
+  latency_ms: number | null;
+  download_bps: number | null;
+  upload_bps: number | null;
+  packet_loss_pct: number | null;
+  bytes_rx: number | null;
+  bytes_tx: number | null;
+  uptime_secs: number | null;
+  timestamp: number;
+}
+
 interface LogEntry {
   timestamp: string;
   type: 'info' | 'success' | 'error' | 'warning';
@@ -34,6 +45,7 @@ function App() {
   const [config, setConfig] = useState(SAMPLE_CONFIG);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showRawConfig, setShowRawConfig] = useState(false);
+  const [health, setHealth] = useState<HealthMetrics | null>(null);
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -49,11 +61,30 @@ function App() {
     }
   }, [addLog]);
 
+  const fetchHealth = useCallback(async () => {
+    try {
+      const result = await invoke<HealthMetrics>('get_health_metrics');
+      setHealth(result);
+    } catch (error) {
+      // Health metrics unavailable
+    }
+  }, []);
+
   useEffect(() => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 3000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
+
+  useEffect(() => {
+    if (status.type === 'Connected') {
+      fetchHealth();
+      const interval = setInterval(fetchHealth, 5000);
+      return () => clearInterval(interval);
+    } else {
+      setHealth(null);
+    }
+  }, [status.type, fetchHealth]);
 
   const handleConnect = async () => {
     setIsLoading(true);
@@ -226,6 +257,71 @@ function App() {
               <span className="text-slate-500">Endpoint:</span>
               <span className="ml-2 text-slate-200 font-mono">{(status as any).endpoint}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Connection Health Dashboard */}
+      {isConnected && health && (
+        <div className="bg-slate-800 rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-medium text-slate-300 mb-3">Connection Health</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Latency */}
+            <div className="bg-slate-900 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500 mb-1">Latency</div>
+              <div className={`text-lg font-bold ${
+                health.latency_ms !== null && health.latency_ms < 50 ? 'text-green-400' :
+                health.latency_ms !== null && health.latency_ms < 150 ? 'text-yellow-400' :
+                'text-red-400'
+              }`}>
+                {health.latency_ms !== null ? `${health.latency_ms.toFixed(1)}ms` : '—'}
+              </div>
+            </div>
+            {/* Download */}
+            <div className="bg-slate-900 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500 mb-1">↓ Download</div>
+              <div className="text-lg font-bold text-blue-400">
+                {health.download_bps !== null 
+                  ? health.download_bps > 1048576 
+                    ? `${(health.download_bps / 1048576).toFixed(1)} MB/s`
+                    : `${(health.download_bps / 1024).toFixed(1)} KB/s`
+                  : '—'}
+              </div>
+            </div>
+            {/* Upload */}
+            <div className="bg-slate-900 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500 mb-1">↑ Upload</div>
+              <div className="text-lg font-bold text-cyan-400">
+                {health.upload_bps !== null 
+                  ? health.upload_bps > 1048576 
+                    ? `${(health.upload_bps / 1048576).toFixed(1)} MB/s`
+                    : `${(health.upload_bps / 1024).toFixed(1)} KB/s`
+                  : '—'}
+              </div>
+            </div>
+            {/* Packet Loss */}
+            <div className="bg-slate-900 rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500 mb-1">Packet Loss</div>
+              <div className={`text-lg font-bold ${
+                health.packet_loss_pct !== null && health.packet_loss_pct === 0 ? 'text-green-400' :
+                health.packet_loss_pct !== null && health.packet_loss_pct < 5 ? 'text-yellow-400' :
+                'text-red-400'
+              }`}>
+                {health.packet_loss_pct !== null ? `${health.packet_loss_pct}%` : '—'}
+              </div>
+            </div>
+          </div>
+          {/* Totals row */}
+          <div className="flex justify-between mt-3 text-xs text-slate-500">
+            <span>
+              Total: ↓ {health.bytes_rx !== null ? `${(health.bytes_rx / 1048576).toFixed(1)} MB` : '—'} / 
+              ↑ {health.bytes_tx !== null ? `${(health.bytes_tx / 1048576).toFixed(1)} MB` : '—'}
+            </span>
+            <span>
+              Uptime: {health.uptime_secs !== null 
+                ? `${Math.floor(health.uptime_secs / 3600)}h ${Math.floor((health.uptime_secs % 3600) / 60)}m`
+                : '—'}
+            </span>
           </div>
         </div>
       )}
