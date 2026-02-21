@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use tauri::{command, State};
 use std::sync::Arc;
+use tauri::{command, State};
 use tokio::sync::Mutex;
 
+use crate::config::{Server, WireGuardConfig, generate_wireguard_config};
 use crate::error::Result;
 use crate::storage::SecureStorage;
 use crate::vpn::{ConnectionManager, ConnectionStatus};
-use crate::config::{Server, WireGuardConfig, generate_wireguard_config};
 
 // Auth Types
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,7 +57,7 @@ pub async fn auth_login(
 ) -> Result<AuthResponse> {
     // In a real implementation, this would call the VPNht API
     // For now, we'll return a mock response
-    
+
     // Validate credentials (mock)
     if email.is_empty() || password.len() < 8 {
         return Err("Invalid credentials".into());
@@ -266,9 +266,9 @@ pub async fn measure_latency(server_id: String) -> Result<LatencyResult> {
     // In real implementation, use ICMP ping
     use tokio::time::{sleep, Duration};
     sleep(Duration::from_millis(100)).await;
-    
+
     let latency = rand::random::<u32>() % 150 + 10;
-    
+
     Ok(LatencyResult {
         server_id,
         latency: Some(latency),
@@ -278,14 +278,14 @@ pub async fn measure_latency(server_id: String) -> Result<LatencyResult> {
 #[command]
 pub async fn measure_latencies(server_ids: Vec<String>) -> Result<Vec<LatencyResult>> {
     let mut results = Vec::new();
-    
+
     for server_id in server_ids {
         let result = measure_latency(server_id).await?;
         results.push(result);
         // Small delay between pings
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
     }
-    
+
     Ok(results)
 }
 

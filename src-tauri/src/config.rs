@@ -1,6 +1,6 @@
+use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use crate::error::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WireGuardConfig {
@@ -28,42 +28,42 @@ impl WireGuardConfig {
     /// Generate wg-quick compatible configuration file content
     pub fn to_wg_quick_format(&self) -> String {
         let mut output = String::new();
-        
+
         // Interface section
         output.push_str("[Interface]\n");
         output.push_str(&format!("PrivateKey = {}\n", self.interface.private_key));
-        
+
         for addr in &self.interface.addresses {
             output.push_str(&format!("Address = {}\n", addr));
         }
-        
+
         for dns in &self.interface.dns {
             output.push_str(&format!("DNS = {}\n", dns));
         }
-        
+
         if let Some(mtu) = self.interface.mtu {
             output.push_str(&format!("MTU = {}\n", mtu));
         }
-        
+
         output.push_str("\n");
-        
+
         // Peer section
         output.push_str("[Peer]\n");
         output.push_str(&format!("PublicKey = {}\n", self.peer.public_key));
-        
+
         for allowed_ip in &self.peer.allowed_ips {
             output.push_str(&format!("AllowedIPs = {}\n", allowed_ip));
         }
-        
+
         output.push_str(&format!("Endpoint = {}\n", self.peer.endpoint));
-        
+
         if self.peer.persistent_keepalive > 0 {
             output.push_str(&format!(
                 "PersistentKeepalive = {}\n",
                 self.peer.persistent_keepalive
             ));
         }
-        
+
         output
     }
 
@@ -78,25 +78,25 @@ impl WireGuardConfig {
         if self.interface.private_key.is_empty() {
             return Err("Private key is required".to_string());
         }
-        
+
         if self.interface.addresses.is_empty() {
             return Err("At least one address is required".to_string());
         }
-        
+
         // Validate peer
         if self.peer.public_key.is_empty() {
             return Err("Peer public key is required".to_string());
         }
-        
+
         if self.peer.endpoint.is_empty() {
             return Err("Peer endpoint is required".to_string());
         }
-        
+
         // Validate endpoint format (host:port)
         if !self.peer.endpoint.contains(':') {
             return Err("Invalid endpoint format, expected host:port".to_string());
         }
-        
+
         Ok(())
     }
 }
@@ -119,15 +119,15 @@ fn generate_keypair_native() -> Result<(String, String)> {
         .arg("genkey")
         .output()
         .map_err(|e| format!("Failed to run wg genkey: {}", e))?;
-    
+
     if !private_output.status.success() {
         return Err("wg genkey failed".to_string());
     }
-    
+
     let private_key = String::from_utf8_lossy(&private_output.stdout)
         .trim()
         .to_string();
-    
+
     // Generate public key from private key
     let mut child = Command::new("wg")
         .arg("pubkey")
@@ -135,24 +135,24 @@ fn generate_keypair_native() -> Result<(String, String)> {
         .stdout(std::process::Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to run wg pubkey: {}", e))?;
-    
+
     use std::io::Write;
     if let Some(ref mut stdin) = child.stdin {
         stdin.write_all(private_key.as_bytes())
             .map_err(|e| format!("Failed to write to wg pubkey: {}", e))?;
     }
-    
+
     let output = child.wait_with_output()
         .map_err(|e| format!("Failed to get output from wg pubkey: {}", e))?;
-    
+
     if !output.status.success() {
         return Err("wg pubkey failed".to_string());
     }
-    
+
     let public_key = String::from_utf8_lossy(&output.stdout)
         .trim()
         .to_string();
-    
+
     Ok((private_key, public_key))
 }
 
@@ -178,7 +178,7 @@ pub struct Server {
 pub fn generate_wireguard_config(server_id: &str) -> Result<WireGuardConfig> {
     // In a real implementation, this would fetch server details from the API
     // and generate appropriate keys
-    
+
     // Generate client keypair
     let (private_key, _public_key) = generate_keypair()
         .unwrap_or_else(|_| {
@@ -188,10 +188,10 @@ pub fn generate_wireguard_config(server_id: &str) -> Result<WireGuardConfig> {
                 "CLIENT_PUBLIC_KEY_PLACEHOLDER".to_string(),
             )
         });
-    
+
     // Server public key (would come from API)
     let server_public_key = "SERVER_PUBLIC_KEY_PLACEHOLDER".to_string();
-    
+
     // Build configuration
     let config = WireGuardConfig {
         interface: InterfaceConfig {
@@ -210,10 +210,10 @@ pub fn generate_wireguard_config(server_id: &str) -> Result<WireGuardConfig> {
             persistent_keepalive: 25,
         },
     };
-    
+
     // Validate configuration
     config.validate()?;
-    
+
     Ok(config)
 }
 
@@ -221,27 +221,27 @@ pub fn generate_wireguard_config(server_id: &str) -> Result<WireGuardConfig> {
 pub fn parse_wireguard_config(config_str: &str) -> Result<WireGuardConfig> {
     let mut interface_config: Option<InterfaceConfig> = None;
     let mut peer_config: Option<PeerConfig> = None;
-    
+
     let mut current_section: Option<&str> = None;
-    
+
     let mut private_key = String::new();
     let mut addresses: Vec<String> = Vec::new();
     let mut dns: Vec<String> = Vec::new();
     let mut mtu: Option<u16> = None;
-    
+
     let mut public_key = String::new();
     let mut allowed_ips: Vec<String> = Vec::new();
     let mut endpoint = String::new();
     let mut persistent_keepalive: u32 = 0;
-    
+
     for line in config_str.lines() {
         let line = line.trim();
-        
+
         // Skip empty lines and comments
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        
+
         // Parse section headers
         if line.starts_with('[') && line.ends_with(']') {
             // Save previous section
@@ -260,16 +260,16 @@ pub fn parse_wireguard_config(config_str: &str) -> Result<WireGuardConfig> {
                     persistent_keepalive,
                 });
             }
-            
+
             current_section = Some(&line[1..line.len()-1]);
             continue;
         }
-        
+
         // Parse key-value pairs
         if let Some(pos) = line.find('=') {
             let key = line[..pos].trim();
             let value = line[pos+1..].trim();
-            
+
             match current_section {
                 Some("Interface") => {
                     match key {
@@ -299,7 +299,7 @@ pub fn parse_wireguard_config(config_str: &str) -> Result<WireGuardConfig> {
             }
         }
     }
-    
+
     // Save last section
     if current_section == Some("Interface") {
         interface_config = Some(InterfaceConfig {
@@ -316,7 +316,7 @@ pub fn parse_wireguard_config(config_str: &str) -> Result<WireGuardConfig> {
             persistent_keepalive,
         });
     }
-    
+
     match (interface_config, peer_config) {
         (Some(interface), Some(peer)) => {
             Ok(WireGuardConfig { interface, peer })
@@ -328,7 +328,7 @@ pub fn parse_wireguard_config(config_str: &str) -> Result<WireGuardConfig> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_wg_quick_format() {
         let config = WireGuardConfig {
@@ -345,14 +345,14 @@ mod tests {
                 persistent_keepalive: 25,
             },
         };
-        
+
         let output = config.to_wg_quick_format();
         assert!(output.contains("[Interface]"));
         assert!(output.contains("PrivateKey = test_private_key"));
         assert!(output.contains("[Peer]"));
         assert!(output.contains("PublicKey = test_public_key"));
     }
-    
+
     #[test]
     fn test_parse_wireguard_config() {
         let config_str = r#"
@@ -368,7 +368,7 @@ AllowedIPs = 0.0.0.0/0
 Endpoint = example.com:443
 PersistentKeepalive = 25
 "#;
-        
+
         let config = parse_wireguard_config(config_str).unwrap();
         assert_eq!(config.interface.private_key, "test_private_key");
         assert_eq!(config.peer.public_key, "test_public_key");

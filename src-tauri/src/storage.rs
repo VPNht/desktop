@@ -1,7 +1,7 @@
-use serde::{de::DeserializeOwned, Serialize};
-use tauri::Manager;
 use crate::error::Result;
 use keyring::Entry;
+use serde::{de::DeserializeOwned, Serialize};
+use tauri::Manager;
 
 pub struct SecureStorage {
     service_name: String,
@@ -15,20 +15,20 @@ impl SecureStorage {
     pub async fn store<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
         let json = serde_json::to_string(value)
             .map_err(|e| format!("Serialization error: {}", e))?;
-        
+
         let entry = Entry::new(&self.service_name, key)
             .map_err(|e| format!("Keyring error: {}", e))?;
-        
+
         entry.set_password(&json)
             .map_err(|e| format!("Storage error: {}", e))?;
-        
+
         Ok(())
     }
 
     pub async fn retrieve<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
         let entry = Entry::new(&self.service_name, key)
             .map_err(|e| format!("Keyring error: {}", e))?;
-        
+
         match entry.get_password() {
             Ok(json) => {
                 let value = serde_json::from_str(&json)
@@ -43,17 +43,17 @@ impl SecureStorage {
     pub async fn store_raw(&self, key: &str, value: &str) -> Result<()> {
         let entry = Entry::new(&self.service_name, key)
             .map_err(|e| format!("Keyring error: {}", e))?;
-        
+
         entry.set_password(value)
             .map_err(|e| format!("Storage error: {}", e))?;
-        
+
         Ok(())
     }
 
     pub async fn retrieve_raw(&self, key: &str) -> Result<Option<String>> {
         let entry = Entry::new(&self.service_name, key)
             .map_err(|e| format!("Keyring error: {}", e))?;
-        
+
         match entry.get_password() {
             Ok(value) => Ok(Some(value)),
             Err(keyring::Error::NoEntry) => Ok(None),
@@ -64,10 +64,10 @@ impl SecureStorage {
     pub async fn delete(&self, key: &str) -> Result<()> {
         let entry = Entry::new(&self.service_name, key)
             .map_err(|e| format!("Keyring error: {}", e))?;
-        
+
         entry.delete_password()
             .map_err(|e| format!("Deletion error: {}", e))?;
-        
+
         Ok(())
     }
 }

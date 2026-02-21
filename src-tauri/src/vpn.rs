@@ -52,7 +52,7 @@ impl ConnectionManager {
 
         // Generate WireGuard config
         let config = crate::config::generate_wireguard_config(server_id)?;
-        
+
         // Validate config
         if !self.validate_config(&config) {
             self.status = ConnectionStatus::Error("Invalid configuration".to_string());
@@ -114,67 +114,67 @@ impl ConnectionManager {
 
     async fn apply_config(&self, config: &WireGuardConfig) -> Result<()> {
         let config_str = config.to_wg_quick_format();
-        
+
         #[cfg(target_os = "linux")]
         {
             // Write config to /tmp and use wg-quick
             let config_path = format!("/tmp/vpnht-{}.conf", self.interface_name);
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
-            
+
             let output = Command::new("wg-quick")
                 .args([&"up".to_string(), self.interface_name.clone()])
                 .output()
                 .map_err(|e| format!("Failed to start WireGuard: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wg-quick failed: {}", stderr));
             }
         }
-        
+
         #[cfg(target_os = "macos")]
         {
             // macOS uses wireguard-go
             let config_path = format!("/tmp/vpnht-{}.conf", self.interface_name);
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
-            
+
             let output = Command::new("wireguard-go")
                 .args([&self.interface_name])
                 .output()
                 .map_err(|e| format!("Failed to start WireGuard: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wireguard-go failed: {}", stderr));
             }
-            
+
             // Set configuration
             Command::new("wg")
                 .args([&"setconf".to_string(), self.interface_name.clone(), config_path])
                 .output()
                 .map_err(|e| format!("Failed to set config: {}", e))?;
         }
-        
+
         #[cfg(target_os = "windows")]
         {
             // Windows uses wireguard.exe
             let config_path = format!("{}\\AppData\\Local\\Temp\\vpnht.conf", std::env::var("USERPROFILE").unwrap_or_default());
             std::fs::write(&config_path, config_str)
                 .map_err(|e| format!("Failed to write config: {}", e))?;
-            
+
             let output = Command::new("wireguard.exe")
                 .args([&"/installtunnelservice".to_string(), config_path])
                 .output()
                 .map_err(|e| format!("Failed to install WireGuard service: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wireguard.exe failed: {}", stderr));
             }
         }
-        
+
         Ok(())
     }
 
@@ -185,39 +185,39 @@ impl ConnectionManager {
                 .args([&"down".to_string(), self.interface_name.clone()])
                 .output()
                 .map_err(|e| format!("Failed to stop WireGuard: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wg-quick down failed: {}", stderr));
             }
         }
-        
+
         #[cfg(target_os = "macos")]
         {
             let output = Command::new("wireguard-go")
                 .args([&"-down".to_string(), &self.interface_name])
                 .output()
                 .map_err(|e| format!("Failed to stop WireGuard: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wireguard-go down failed: {}", stderr));
             }
         }
-        
+
         #[cfg(target_os = "windows")]
         {
             let output = Command::new("wireguard.exe")
                 .args([&"/uninstalltunnelservice".to_string(), self.interface_name.clone()])
                 .output()
                 .map_err(|e| format!("Failed to uninstall WireGuard service: {}", e))?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(format!("wireguard.exe uninstall failed: {}", stderr));
             }
         }
-        
+
         Ok(())
     }
 }

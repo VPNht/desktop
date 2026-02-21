@@ -5,8 +5,11 @@ mod storage;
 mod vpn;
 
 use std::sync::Arc;
+use tauri::{
+    Builder, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    SystemTrayMenuItem, generate_context, generate_handler,
+};
 use tokio::sync::Mutex;
-use tauri::{generate_context, generate_handler, Builder, Manager, SystemTray, SystemTrayEvent, CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
 use vpn::ConnectionManager;
 
 fn main() {
