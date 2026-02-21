@@ -1,0 +1,304 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  build-and-sign:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            arch: x86_64
+          - platform: ubuntu-22.04
+            target: aarch64-unknown-linux-gnu
+            arch: aarch64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            arch: x86_64
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            arch: aarch64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            arch: x86_64
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          fi
+
+      - name: Install dependencies (Ubuntu)
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Install dependencies (macOS)
+        if: startsWith(matrix.platform, 'macos')
+        run: |
+          brew install create-dmg
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # Import certificates for signing
+      - name: Import macOS certificate
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PASSWORD" build.keychain
+
+      - name: Import Windows certificate
+        if: startsWith(matrix.platform, 'windows')
+        run: |
+          $bytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERTIFICATE }}")
+          [IO.File]::WriteAllBytes("certificate.pfx", $bytes)
+
+      - name: Build and package
+        run: npm run tauri:build -- --target ${{ matrix.target }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WINDOWS_CERTIFICATE_PATH: ${{ github.workspace }}\certificate.pfx
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      # Sign Linux packages with GPG
+      - name: Sign Linux packages
+        if: startsWith(matrix.platform, 'ubuntu')
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --import
+          for file in src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb; do
+            [ -f "$file" ] || continue
+            gpg --batch --yes --passphrase "$GPG_PASSPHRASE" --detach-sign --armor "$file"
+          done
+          for file in src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm; do
+            [ -f "$file" ] || continue
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --passphrase-fd 0 --detach-sign --armor "$file"
+          done
+
+      # Notarize macOS app
+      - name: Notarize macOS app
+        if: startsWith(matrix.platform, 'macos')
+        run: |
+          xcrun notarytool submit src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}" \
+            --wait
+
+      # Upload artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-artifacts
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*
+            !src-tauri/target/${{ matrix.target }}/release/bundle/**/!(.*.deb|*.AppImage|*.rpm|*.dmg|*.msi|*.exe|*.sig|*.asc)
+
+  create-release:
+    needs: build-and-sign
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: '*-artifacts'
+          merge-multiple: false
+
+      - name: Generate release notes
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+          ## VPNht Desktop v${{ env.VERSION }}
+
+          ### Security
+          - All binaries are signed and verified
+          - macOS app is notarized by Apple
+          - Windows executables are Authenticode signed
+          - Linux packages are GPG signed
+
+          ### Installation
+
+          #### macOS
+          Download the `.dmg` file, open it, and drag VPNht to your Applications folder.
+
+          #### Windows
+          Download the `.msi` installer and run it. Alternatively, use the `.exe` installer.
+
+          #### Linux
+          - **Ubuntu/Debian**: Install the `.deb` package with `sudo dpkg -i vpnht_*.deb`
+          - **Fedora/openSUSE**: Install the `.rpm` package with `sudo rpm -i vpnht_*.rpm`
+          - **Other**: Use the AppImage (no installation required)
+
+          ### Verification
+          Verify GPG signatures on Linux:
+          ```bash
+          gpg --verify vpnht_*.deb.asc
+          ```
+
+          ### Checksums
+          SHA256 checksums are provided for all files.
+          EOF
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          find . -type f ! -name '*.sha256' -exec sha256sum {} \; > ../checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: VPNht Desktop v${{ env.VERSION }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            artifacts/**/*
+            checksums.txt
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+
+  update-release-json:
+    needs: create-release
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          fi
+
+      - name: Generate updater JSON
+        run: |
+          cat > updates.json << EOF
+          {
+            "version": "v${{ env.VERSION }}",
+            "notes": "See release notes at https://github.com/VPNht/desktop/releases/tag/v${{ env.VERSION }}",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-x86_64": {
+                "signature": "$(cat artifacts/x86_64-apple-darwin-artifacts/*.app.tgz.sig 2>/dev/null || echo 'TBD')",
+                "url": "https://github.com/VPNht/desktop/releases/download/v${{ env.VERSION }}/VPNht_x64.app.tgz"
+              },
+              "darwin-aarch64": {
+                "signature": "$(cat artifacts/aarch64-apple-darwin-artifacts/*.app.tgz.sig 2>/dev/null || echo 'TBD')",
+                "url": "https://github.com/VPNht/desktop/releases/download/v${{ env.VERSION }}/VPNht_aarch64.app.tgz"
+              },
+              "linux-x86_64": {
+                "signature": "$(cat artifacts/x86_64-unknown-linux-gnu-artifacts/*.AppImage.sig 2>/dev/null || echo 'TBD')",
+                "url": "https://github.com/VPNht/desktop/releases/download/v${{ env.VERSION }}/vpnht_${{ env.VERSION }}_amd64.AppImage"
+              },
+              "windows-x86_64": {
+                "signature": "$(cat artifacts/x86_64-pc-windows-msvc-artifacts/*.msi.zip.sig 2>/dev/null || echo 'TBD')",
+                "url": "https://github.com/VPNht/desktop/releases/download/v${{ env.VERSION }}/VPNht_${{ env.VERSION }}_x64_en-US.msi"
+              }
+            }
+          }
+          EOF
+
+      - name: Upload updater JSON
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          files: updates.json
+
+      - name: Update updater endpoint (S3)
+        run: |
+          # Upload to S3 or your update server
+          # aws s3 cp updates.json s3://your-bucket/updates.json
+          echo "Update JSON generated. Upload to your update server."
+
+  update-homebrew:
+    needs: create-release
+    runs-on: ubuntu-22.04
+    if: ${{ !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha') }}
+    steps:
+      - name: Update Homebrew Cask
+        run: |
+          # This would typically update the homebrew-cask repository
+          # via a pull request to homebrew/homebrew-cask
+          echo "Homebrew cask update would be triggered here"

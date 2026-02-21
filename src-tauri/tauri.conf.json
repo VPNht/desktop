@@ -20,16 +20,29 @@
       },
       "fs": {
         "all": false,
-        "readFile": true,
-        "writeFile": true,
-        "createDir": true,
-        "removeDir": true,
-        "removeFile": true,
-        "renameFile": true,
-        "exists": true
+        "readFile": false,
+        "writeFile": false,
+        "createDir": false,
+        "removeDir": false,
+        "removeFile": false,
+        "renameFile": false,
+        "exists": false,
+        "scope": [
+          "$APPDATA/**",
+          "$DESKTOP/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**"
+        ]
       },
       "http": {
-        "all": true
+        "all": true,
+        "scope": [
+          "https://api.vpnht.com/**",
+          "https://*.vpnht.com/**",
+          "https://updates.vpnht.com/**",
+          "https://www.dnsleaktest.com/**",
+          "https://ipinfo.io/**"
+        ]
       },
       "notification": {
         "all": true
@@ -46,7 +59,7 @@
       },
       "window": {
         "all": false,
-        "close": true,
+        "close": false,
         "hide": true,
         "show": true,
         "maximize": true,
@@ -61,7 +74,11 @@
       "category": "Productivity",
       "copyright": "© 2024 VPNht",
       "deb": {
-        "depends": ["wireguard", "wireguard-tools"]
+        "depends": [
+          "wireguard",
+          "wireguard-tools",
+          "libwebkit2gtk-4.0-37"
+        ]
       },
       "externalBin": [],
       "icon": [
@@ -72,7 +89,7 @@
         "icons/icon.ico"
       ],
       "identifier": "com.vpnht.desktop",
-      "longDescription": "VPNht Desktop - Secure VPN Client",
+      "longDescription": "VPNht Desktop - Secure VPN Client with advanced privacy features",
       "macOS": {
         "entitlements": "entitlements.plist",
         "exceptionDomain": "",
@@ -81,7 +98,7 @@
         "signingIdentity": null
       },
       "resources": [],
-      "shortDescription": "VPN Client",
+      "shortDescription": "Secure VPN Client",
       "targets": "all",
       "windows": {
         "certificateThumbprint": null,
@@ -94,10 +111,10 @@
       }
     },
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; connect-src 'self' https: wss:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none';",
       "dangerousDisableAssetCspModification": false,
       "dangerousUseHttpScheme": false,
-      "freezePrototype": false,
+      "freezePrototype": true,
       "pattern": {
         "use": "brownfield"
       }
@@ -111,7 +128,8 @@
       "active": true,
       "dialog": true,
       "endpoints": [
-        "https://updates.vpnht.com/{{target}}/{{current_version}}"
+        "https://updates.vpnht.com/{{target}}/{{current_version}}",
+        "https://api.github.com/repos/VPNht/desktop/releases/latest"
       ],
       "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE",
       "windows": {
@@ -127,7 +145,9 @@
         "resizable": true,
         "title": "VPNht Desktop",
         "visible": true,
-        "width": 1200
+        "width": 1200,
+        "center": true,
+        "decorations": true
       }
     ]
   }

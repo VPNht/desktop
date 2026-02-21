@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://vpnht.com/security
+    about: Please report security vulnerabilities privately via our security page.
+  - name: Documentation
+    url: https://docs.vpnht.com
+    about: Check our documentation for common questions and troubleshooting.
+  - name: Community Support
+    url: https://github.com/VPNht/desktop/discussions
+    about: Ask questions and discuss with other community members.

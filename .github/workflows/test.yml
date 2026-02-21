@@ -1,0 +1,153 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop, vpnht-rewrite]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  # Frontend tests with Vitest
+  test-frontend:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cache Node dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest tests
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Rust tests
+  test-rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri"
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential libssl-dev
+
+      - name: Run Rust unit tests
+        working-directory: src-tauri
+        run: cargo test --lib -- --nocapture
+
+      - name: Run Rust integration tests
+        working-directory: src-tauri
+        run: cargo test --test '*' -- --nocapture
+
+      - name: Run Rust doc tests
+        working-directory: src-tauri
+        run: cargo test --doc -- --nocapture
+
+      - name: Generate coverage report (tarpaulin)
+        if: matrix.platform == 'ubuntu-22.04'
+        working-directory: src-tauri
+        run: |
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --out Xml
+
+      - name: Upload Rust coverage
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./src-tauri/cobertura.xml
+          flags: rust
+          name: rust-coverage
+
+  # Type checking
+  typecheck:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # Rust clippy and formatting
+  rust-lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential libssl-dev
+
+      - name: Check Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt -- --check
+
+      - name: Run Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run cargo audit
+        working-directory: src-tauri
+        run: |
+          cargo install cargo-audit
+          cargo audit

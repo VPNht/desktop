@@ -1,0 +1,178 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday
+
+jobs:
+  # Rust security audit
+  rust-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Run cargo audit
+        working-directory: src-tauri
+        run: |
+          cargo install cargo-audit
+          cargo audit --json > audit.json || true
+          cargo audit
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rust-security-audit
+          path: src-tauri/audit.json
+
+  # Dependency scanning with cargo-deny
+  cargo-deny:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          command: check advisories bans licenses sources
+
+  # Node.js security audit
+  npm-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run npm audit
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=moderate --json > npm-audit.json || true
+
+      - name: Check for high/critical vulnerabilities
+        run: |
+          npm audit --audit-level=high
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: npm-security-audit
+          path: npm-audit.json
+
+  # CodeQL Analysis
+  codeql:
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript, rust]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  # Secret scanning
+  secret-scan:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret detection
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  # SAST with Semgrep
+  semgrep:
+    runs-on: ubuntu-22.04
+    container:
+      image: semgrep/semgrep
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: |
+          semgrep --config=p/default --config=p/react --config=p/rust \
+            --json --output=semgrep-findings.json \
+            --error || true
+
+      - name: Upload Semgrep results
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-findings.json
+
+  # Tauri specific security
+  tauri-security:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check CSP configuration
+        run: |
+          if ! grep -q '"csp"' src-tauri/tauri.conf.json; then
+            echo "::warning:: CSP not configured in tauri.conf.json"
+          fi
+          cat src-tauri/tauri.conf.json | jq '.tauri.security'
+
+      - name: Check for dangerous permissions
+        run: |
+          # Check for overly broad permissions
+          if grep -q '"all": true' src-tauri/tauri.conf.json; then
+            echo "::error:: Dangerous 'all: true' permission found"
+            exit 1
+          fi
+
+      - name: Verify no hardcoded secrets
+        run: |
+          # Check for common patterns
+          if grep -rni "api_key\|apikey\|password\|secret" --include="*.rs" --include="*.ts" --include="*.tsx" | grep -v "// " | grep -v "/* " | head -20; then
+            echo "::warning:: Potential hardcoded credentials found"
+          fi
