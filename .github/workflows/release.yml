@@ -48,7 +48,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -86,8 +87,11 @@ jobs:
         run: |
           brew install create-dmg
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       # Import certificates for signing
       - name: Import macOS certificate
@@ -111,7 +115,7 @@ jobs:
           [IO.File]::WriteAllBytes("certificate.pfx", $bytes)
 
       - name: Build and package
-        run: npm run tauri:build -- --target ${{ matrix.target }}
+        run: pnpm run tauri:build -- --target ${{ matrix.target }}
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
