@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+
+mod killswitch;
+pub use killswitch::{enable_killswitch, disable_killswitch};
 use std::sync::Arc;
 use tauri::{command, State};
 use tokio::sync::Mutex;
