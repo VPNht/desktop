@@ -37,11 +37,11 @@
       "http": {
         "all": true,
         "scope": [
-          "https://api.vpnht.com/**",
-          "https://*.vpnht.com/**",
-          "https://updates.vpnht.com/**",
-          "https://www.dnsleaktest.com/**",
-          "https://ipinfo.io/**"
+          "https://api.vpnht.com/graphql",
+          "https://api.vpnht.com/v1/**",
+          "https://updates.vpnht.com/v1/**",
+          "https://ipinfo.io/json",
+          "https://*.tile.openstreetmap.org/**"
         ]
       },
       "notification": {
@@ -111,7 +111,7 @@
       }
     },
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https: wss:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none';",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-vpnht'; img-src 'self' https: data:; connect-src 'self' https://api.vpnht.com https://ipinfo.io https://*.tile.openstreetmap.org; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       "dangerousDisableAssetCspModification": false,
       "dangerousUseHttpScheme": false,
       "freezePrototype": true

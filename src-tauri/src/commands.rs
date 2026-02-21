@@ -11,6 +11,23 @@ use crate::error::Result;
 use crate::storage::SecureStorage;
 use crate::vpn::{ConnectionManager, ConnectionStatus};
 
+// Storage key allowlist
+const ALLOWED_STORAGE_KEYS: &[&str] = &[
+    "auth_tokens",
+    "user", 
+    "vpn_config",
+    "wireguard_private_key",
+    "app_settings",
+];
+
+fn validate_storage_key(key: &str) -> Result<()> {
+    if ALLOWED_STORAGE_KEYS.contains(&key) {
+        Ok(())
+    } else {
+        Err(AppError::Storage(format!("Storage key '{}' is not permitted", key)))
+    }
+}
+
 // Auth Types
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginRequest {
@@ -51,6 +68,36 @@ pub struct AuthTokens {
     pub expires_at: i64,
 }
 
+// Input validation helper functions
+fn validate_email(email: &str) -> Result<()> {
+    if !email.contains('@') || email.len() < 5 || email.len() > 254 {
+        return Err(AppError::Auth("Invalid email address".into()));
+    }
+    // Additional email format validation
+    let parts: Vec<&str> = email.split('@').collect();
+    if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+        return Err(AppError::Auth("Invalid email format".into()));
+    }
+    if parts[1].chars().filter(|&c| c == '.').count() == 0 {
+        return Err(AppError::Auth("Invalid email domain".into()));
+    }
+    Ok(())
+}
+
+fn validate_password(password: &str) -> Result<()> {
+    if password.len() < 8 || password.len() > 128 {
+        return Err(AppError::Auth("Password must be between 8 and 128 characters".into()));
+    }
+    Ok(())
+}
+
+fn validate_server_id(server_id: &str) -> Result<()> {
+    if server_id.len() > 64 || !server_id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        return Err(AppError::Config("Invalid server ID".into()));
+    }
+    Ok(())
+}
+
 // Auth Commands
 #[command]
 pub async fn auth_login(
@@ -58,12 +105,16 @@ pub async fn auth_login(
     password: String,
     storage: State<'_, SecureStorage>,
 ) -> Result<AuthResponse> {
+    // Validate inputs
+    validate_email(&email)?;
+    validate_password(&password)?;
+    
     // In a real implementation, this would call the VPNht API
     // For now, we'll return a mock response
-
+    
     // Validate credentials (mock)
-    if email.is_empty() || password.len() < 8 {
-        return Err("Invalid credentials".into());
+    if email.is_empty() {
+        return Err(AppError::Auth("Invalid credentials".into()));
     }
 
     let user = User {
@@ -82,7 +133,9 @@ pub async fn auth_login(
         expires_at: chrono::Utc::now().timestamp() + 3600,
     };
 
-    // Store tokens securely
+    // Store tokens securely with validation
+    validate_storage_key("auth_tokens")?;
+    validate_storage_key("user")?;
     storage.store("auth_tokens", &tokens).await?;
     storage.store("user", &user).await?;
 
@@ -94,30 +147,35 @@ pub async fn auth_signup(
     email: String,
     password: String,
     storage: State<'_, SecureStorage>,
+    api_client: State<'_, Arc<ApiClient>>,
 ) -> Result<AuthResponse> {
-    // Validate password strength
+    // Validate inputs
+    validate_email(&email)?;
     if password.len() < 8 {
-        return Err("Password must be at least 8 characters".into());
+        return Err(AppError::Auth("Password must be at least 8 characters".into()));
     }
-
-    // Register user (mock)
+    
+    let (api_user, api_tokens) = api_client.signup(&email, &password).await?;
+    
     let user = User {
-        id: format!("user_{}", uuid::Uuid::new_v4()),
-        email: email.clone(),
+        id: api_user.id,
+        email: api_user.email,
         subscription: Subscription {
-            plan: "free".to_string(),
-            expires_at: "2099-12-31".to_string(),
-            is_active: true,
+            plan: api_user.subscription.plan,
+            expires_at: api_user.subscription.expires_at,
+            is_active: api_user.subscription.is_active,
         },
     };
 
     let tokens = AuthTokens {
-        access_token: format!("mock_token_{}", uuid::Uuid::new_v4()),
-        refresh_token: format!("mock_refresh_{}", uuid::Uuid::new_v4()),
-        expires_at: chrono::Utc::now().timestamp() + 3600,
+        access_token: api_tokens.access_token,
+        refresh_token: api_tokens.refresh_token,
+        expires_at: api_tokens.expires_at,
     };
 
-    // Store tokens securely
+    // Store tokens securely with validation
+    validate_storage_key("auth_tokens")?;
+    validate_storage_key("user")?;
     storage.store("auth_tokens", &tokens).await?;
     storage.store("user", &user).await?;
 
@@ -125,9 +183,15 @@ pub async fn auth_signup(
 }
 
 #[command]
-pub async fn auth_logout(storage: State<'_, SecureStorage>) -> Result<()> {
+pub async fn auth_logout(
+    storage: State<'_, SecureStorage>,
+    api_client: State<'_, Arc<ApiClient>>,
+) -> Result<()> {
+    validate_storage_key("auth_tokens")?;
+    validate_storage_key("user")?;
     storage.delete("auth_tokens").await?;
     storage.delete("user").await?;
+    api_client.clear_tokens().await;
     Ok(())
 }
 
@@ -153,82 +217,33 @@ pub struct ServerData {
 }
 
 #[command]
-pub async fn fetch_servers() -> Result<Vec<ServerData>> {
-    // In a real implementation, this would fetch from the VPNht GraphQL API
-    // For now, return mock data
-    let servers = get_mock_servers();
+pub async fn fetch_servers(
+    api_client: State<'_, Arc<ApiClient>>,
+) -> Result<Vec<ServerData>> {
+    let api_servers = api_client.fetch_servers().await?;
+    
+    let servers = api_servers.into_iter().map(|server| ServerData {
+        id: server.id,
+        name: server.name,
+        country: server.country,
+        country_code: server.country_code,
+        city: server.city,
+        lat: server.lat,
+        lng: server.lng,
+        hostname: server.hostname,
+        ip: server.ip,
+        port: server.port,
+        public_key: server.public_key,
+        supported_protocols: server.supported_protocols,
+        features: server.features,
+        latency: None,
+        load: server.load,
+        is_premium: server.is_premium,
+    }).collect();
+    
     Ok(servers)
 }
 
-fn get_mock_servers() -> Vec<ServerData> {
-    vec![
-        // North America
-        ServerData {
-            id: "us-nyc".to_string(),
-            name: "New York".to_string(),
-            country: "United States".to_string(),
-            country_code: "US".to_string(),
-            city: "New York".to_string(),
-            lat: 40.7128,
-            lng: -74.0060,
-            hostname: "us-nyc.vpnht.com".to_string(),
-            ip: "192.168.1.1".to_string(),
-            port: 443,
-            public_key: "abc123PLACEHOLDER".to_string(),
-            supported_protocols: vec!["wireguard".to_string(), "openvpn_udp".to_string()],
-            features: vec!["p2p".to_string(), "streaming".to_string()],
-            latency: Some(25),
-            load: Some(45),
-            is_premium: false,
-        },
-        ServerData {
-            id: "uk-lon".to_string(),
-            name: "London".to_string(),
-            country: "United Kingdom".to_string(),
-            country_code: "GB".to_string(),
-            city: "London".to_string(),
-            lat: 51.5074,
-            lng: -0.1278,
-            hostname: "uk-lon.vpnht.com".to_string(),
-            ip: "192.168.2.1".to_string(),
-            port: 443,
-            public_key: "def456PLACEHOLDER".to_string(),
-            supported_protocols: vec!["wireguard".to_string(), "openvpn_udp".to_string(), "openvpn_tcp".to_string()],
-            features: vec!["p2p".to_string(), "streaming".to_string()],
-            latency: Some(35),
-            load: Some(58),
-            is_premium: false,
-        },
-        ServerData {
-            id: "de-fra".to_string(),
-            name: "Frankfurt".to_string(),
-            country: "Germany".to_string(),
-            country_code: "DE".to_string(),
-            city: "Frankfurt".to_string(),
-            lat: 50.1109,
-            lng: 8.6821,
-            hostname: "de-fra.vpnht.com".to_string(),
-            ip: "192.168.2.4".to_string(),
-            port: 443,
-            public_key: "ghi789PLACEHOLDER".to_string(),
-            supported_protocols: vec!["wireguard".to_string(), "openvpn_udp".to_string(), "openvpn_tcp".to_string()],
-            features: vec!["p2p".to_string(), "streaming".to_string()],
-            latency: Some(30),
-            load: Some(71),
-            is_premium: false,
-        },
-        ServerData {
-            id: "sg-sin".to_string(),
-            name: "Singapore".to_string(),
-            country: "Singapore".to_string(),
-            country_code: "SG".to_string(),
-            city: "Singapore".to_string(),
-            lat: 1.3521,
-            lng: 103.8198,
-            hostname: "sg-sin.vpnht.com".to_string(),
-            ip: "192.168.3.3".to_string(),
-            port: 443,
-            public_key: "jkl012PLACEHOLDER".to_string(),
             supported_protocols: vec!["wireguard".to_string(), "openvpn_udp".to_string(), "openvpn_tcp".to_string()],
             features: vec!["p2p".to_string(), "streaming".to_string()],
             latency: Some(85),
@@ -265,21 +280,28 @@ pub struct LatencyResult {
 
 #[command]
 pub async fn measure_latency(server_id: String) -> Result<LatencyResult> {
-    // Simulate latency measurement
-    // In real implementation, use ICMP ping
-    use tokio::time::{sleep, Duration};
-    sleep(Duration::from_millis(100)).await;
-
-    let latency = rand::random::<u32>() % 150 + 10;
+    // Validate server_id
+    validate_server_id(&server_id)?;
+    
+    // Use the real latency measurement function
+    let latency = measure_tcp_latency(&server_id).await?;
 
     Ok(LatencyResult {
         server_id,
-        latency: Some(latency),
-    })
+        latency,
 }
 
 #[command]
 pub async fn measure_latencies(server_ids: Vec<String>) -> Result<Vec<LatencyResult>> {
+    // Limit batch size to prevent DoS
+    if server_ids.len() > 100 {
+        return Err(AppError::Network("Too many servers for latency measurement (max 100)".into()));
+    }
+    
+    for server_id in &server_ids {
+        validate_server_id(server_id)?;
+    }
+    
     let mut results = Vec::new();
 
     for server_id in server_ids {
@@ -303,14 +325,18 @@ pub struct IPInfo {
 }
 
 #[command]
-pub async fn get_ip_info() -> Result<IPInfo> {
-    // In real implementation, call an IP info API
+pub async fn get_ip_info(
+    api_client: State<'_, Arc<ApiClient>>,
+) -> Result<IPInfo> {
+    let ip_info = api_client.get_ip_info().await?;
+    
     Ok(IPInfo {
-        ip: "203.0.113.1".to_string(),
-        country: "United States".to_string(),
-        city: "New York".to_string(),
-        isp: "VPNht".to_string(),
-        is_vpn: true,
+        ip: ip_info.ip,
+        country: ip_info.country,
+        city: ip_info.city,
+        isp: ip_info.org,
+        is_vpn: ip_info.org.to_lowercase().contains("vpn") || 
+               ip_info.org.to_lowercase().contains("vpnht"),
     })
 }
 
@@ -320,6 +346,9 @@ pub async fn vpn_connect(
     server_id: String,
     manager: State<'_, Arc<Mutex<ConnectionManager>>>,
 ) -> Result<()> {
+    // Validate server_id
+    validate_server_id(&server_id)?;
+    
     let mut manager = manager.lock().await;
     manager.connect(&server_id).await?;
     Ok(())
@@ -345,6 +374,9 @@ pub async fn get_connection_status(
 // WireGuard Config Commands
 #[command]
 pub fn gen_wireguard_config(server_id: String) -> Result<WireGuardConfig> {
+    // Validate server_id
+    validate_server_id(&server_id)?;
+    
     // Generate a new WireGuard config
     let config = generate_wireguard_config(&server_id)?;
     Ok(config)
@@ -353,10 +385,10 @@ pub fn gen_wireguard_config(server_id: String) -> Result<WireGuardConfig> {
 #[command]
 pub fn validate_wireguard_config(config: WireGuardConfig) -> Result<bool> {
     // Validate the WireGuard configuration
-    if config.interface.private_key.is_empty() {
+    if config.interface.private_key.is_empty() || config.interface.private_key.len() > 256 {
         return Ok(false);
     }
-    if config.peer.public_key.is_empty() {
+    if config.peer.public_key.is_empty() || config.peer.public_key.len() > 256 {
         return Ok(false);
     }
     if config.peer.endpoint.is_empty() {
@@ -372,6 +404,7 @@ pub async fn store_secure(
     value: String,
     storage: State<'_, SecureStorage>,
 ) -> Result<()> {
+    validate_storage_key(&key)?;
     storage.store_raw(&key, &value).await?;
     Ok(())
 }
@@ -381,6 +414,7 @@ pub async fn retrieve_secure(
     key: String,
     storage: State<'_, SecureStorage>,
 ) -> Result<Option<String>> {
+    validate_storage_key(&key)?;
     let value = storage.retrieve_raw(&key).await?;
     Ok(value)
 }
@@ -390,6 +424,7 @@ pub async fn delete_secure(
     key: String,
     storage: State<'_, SecureStorage>,
 ) -> Result<()> {
+    validate_storage_key(&key)?;
     storage.delete(&key).await?;
     Ok(())
 }
