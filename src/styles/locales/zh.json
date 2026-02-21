@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "VPNht",
+    "tagline": "安全。快速。私密。"
+  },
+  "nav": {
+    "home": "主页",
+    "servers": "服务器",
+    "map": "地图",
+    "settings": "设置",
+    "logout": "退出登录"
+  },
+  "auth": {
+    "login": "登录",
+    "signup": "注册",
+    "email": "邮箱",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "forgotPassword": "忘记密码？",
+    "noAccount": "没有账户？",
+    "haveAccount": "已有账户？",
+    "loggingIn": "正在登录...",
+    "signingUp": "正在注册...",
+    "errors": {
+      "invalidEmail": "请输入有效的邮箱地址",
+      "passwordTooShort": "密码必须至少8个字符",
+      "passwordsMatch": "密码不匹配",
+      "loginFailed": "登录失败。请检查您的凭据。",
+      "signupFailed": "注册失败。请重试。"
+    }
+  },
+  "connection": {
+    "status": {
+      "connected": "已连接",
+      "connecting": "连接中...",
+      "disconnected": "已断开",
+      "disconnecting": "断开中...",
+      "error": "连接错误"
+    },
+    "connect": "连接",
+    "disconnect": "断开",
+    "currentServer": "当前服务器",
+    "yourIP": "您的IP",
+    "protected": "受保护",
+    "exposed": "暴露",
+    "duration": "连接时间",
+    "dataTransferred": "数据传输"
+  },
+  "servers": {
+    "title": "服务器位置",
+    "search": "搜索服务器...",
+    "allRegions": "所有区域",
+    "favorites": "收藏",
+    "latency": "延迟",
+    "load": "负载",
+    "protocols": "协议",
+    "features": {
+      "p2p": "支持P2P",
+      "streaming": "流媒体优化",
+      "doubleVpn": "双VPN"
+    },
+    "sort": {
+      "name": "名称",
+      "latency": "延迟",
+      "load": "负载"
+    }
+  },
+  "map": {
+    "title": "服务器地图",
+    "clickToConnect": "点击服务器连接",
+    "serverCount": "{{count}} 个服务器可用",
+    "yourLocation": "您的位置"
+  },
+  "settings": {
+    "title": "设置",
+    "general": {
+      "title": "常规",
+      "language": "语言",
+      "startup": "开机启动",
+      "minimize": "最小化到托盘",
+      "theme": {
+        "title": "主题",
+        "light": "浅色",
+        "dark": "深色",
+        "system": "跟随系统"
+      }
+    },
+    "connection": {
+      "title": "连接",
+      "autoConnect": "启动时自动连接",
+      "killSwitch": "Kill Switch",
+      "killSwitchDesc": "如果VPN断开，阻止所有互联网流量",
+      "dnsLeak": "DNS泄漏保护",
+      "dnsLeakDesc": "使用我们的DNS服务器防止泄漏",
+      "ipv6": "禁用IPv6",
+      "protocol": "协议",
+      "protocols": {
+        "wireguard": "WireGuard",
+        "openvpn_udp": "OpenVPN (UDP)",
+        "openvpn_tcp": "OpenVPN (TCP)"
+      }
+    },
+    "advanced": {
+      "title": "高级",
+      "obfuscation": "混淆",
+      "obfuscationDesc": "隐藏VPN流量以绕过防火墙",
+      "customDns": "自定义DNS",
+      "customDnsDesc": "使用自定义DNS服务器",
+      "mtu": "MTU大小"
+    }
+  }
+}
