@@ -104,13 +104,9 @@ impl WireGuardConfig {
 /// Generate a new WireGuard keypair
 pub fn generate_keypair() -> Result<(String, String)> {
     // Try to use wg genkey/wg pubkey
-    match generate_keypair_native() {
-        Ok(keys) => Ok(keys),
-        Err(_) => {
-            // Fallback to generating keys with base64
-            generate_keypair_fallback()
-        }
-    }
+    generate_keypair_native().map_err(|e| {
+        format!("Failed to generate WireGuard keypair: {}. Ensure `wg` tools are installed.", e)
+    })
 }
 
 fn generate_keypair_native() -> Result<(String, String)> {
@@ -176,18 +172,8 @@ pub struct Server {
 
 /// Generate a WireGuard configuration for a given server
 pub fn generate_wireguard_config(server_id: &str) -> Result<WireGuardConfig> {
-    // In a real implementation, this would fetch server details from the API
-    // and generate appropriate keys
-
     // Generate client keypair
-    let (private_key, _public_key) = generate_keypair()
-        .unwrap_or_else(|_| {
-            // Use placeholder keys for demo
-            (
-                "CLIENT_PRIVATE_KEY_PLACEHOLDER".to_string(),
-                "CLIENT_PUBLIC_KEY_PLACEHOLDER".to_string(),
-            )
-        });
+    let (private_key, _public_key) = generate_keypair()?;
 
     // Server public key (would come from API)
     let server_public_key = "SERVER_PUBLIC_KEY_PLACEHOLDER".to_string();

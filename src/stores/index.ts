@@ -140,6 +140,7 @@ interface ConnectionStoreState extends ConnectionState {
   updateStats: (bytesReceived: number, bytesSent: number) => void;
   setError: (error: string | undefined) => void;
   setIPInfo: (ipInfo: IPInfo | undefined) => void;
+  pending: boolean;
 }
 
 export const useConnectionStore = create<ConnectionStoreState>()(
@@ -151,12 +152,16 @@ export const useConnectionStore = create<ConnectionStoreState>()(
     bytesSent: 0,
     error: undefined,
     ipInfo: undefined,
+    pending: false,
 
     connect: async (server: Server) => {
-      const { status } = get();
-      if (status === "connecting" || status === "connected") {
+      const { status, pending } = get();
+      if (status === "connecting" || status === "connected" || pending) {
         return;
       }
+      set((state) => {
+        state.pending = true;
+      });
 
       set((state) => {
         state.status = "connecting";
@@ -173,22 +178,27 @@ export const useConnectionStore = create<ConnectionStoreState>()(
           state.connectedAt = new Date();
           state.bytesReceived = 0;
           state.bytesSent = 0;
+          state.pending = false;
         });
       } catch (error) {
         set((state) => {
           state.status = "error";
           state.error = error instanceof Error ? error.message : "Connection failed";
           state.server = undefined;
+          state.pending = false;
         });
         throw error;
       }
     },
 
     disconnect: async () => {
-      const { status } = get();
-      if (status === "disconnecting" || status === "disconnected") {
+      const { status, pending } = get();
+      if (status === "disconnecting" || status === "disconnected" || pending) {
         return;
       }
+      set((state) => {
+        state.pending = true;
+      });
 
       set((state) => {
         state.status = "disconnecting";
@@ -206,11 +216,13 @@ export const useConnectionStore = create<ConnectionStoreState>()(
           state.bytesSent = 0;
           state.error = undefined;
           state.ipInfo = undefined;
+          state.pending = false;
         });
       } catch (error) {
         set((state) => {
           state.status = "error";
           state.error = error instanceof Error ? error.message : "Disconnection failed";
+          state.pending = false;
         });
         throw error;
       }
