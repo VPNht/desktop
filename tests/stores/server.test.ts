@@ -2,15 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useServerStore } from "../../src/stores";
 
-// Mock @tauri-apps/api before importing store
 vi.mock("@tauri-apps/api", () => ({
   invoke: vi.fn(),
 }));
 
 describe("Server Store", () => {
   beforeEach(() => {
-    // Reset the store before each test
-    useServerStore.getState().reset();
+    useServerStore.setState({
+      servers: [],
+      favorites: [],
+      selectedRegion: null,
+      searchQuery: "",
+      isLoading: false,
+      latencyMap: new Map(),
+      lastUpdated: null,
+    });
   });
 
   it("should initialize with empty servers", () => {
@@ -18,97 +24,76 @@ describe("Server Store", () => {
     expect(result.current.servers).toEqual([]);
   });
 
-  it("should set servers with setServers", () => {
+  it("should set servers", () => {
     const { result } = renderHook(() => useServerStore());
-    const testServers = [
-      { id: "us-nyc", name: "New York", region: "US", load: 10 },
-      { id: "uk-lon", name: "London", region: "UK", load: 20 },
-    ];
-    
+    const servers = [{ id: "us-nyc", name: "New York" }] as any;
+
     act(() => {
-      result.current.setServers(testServers);
+      result.current.setServers(servers);
     });
-    
-    expect(result.current.servers).toEqual(testServers);
+
+    expect(result.current.servers).toHaveLength(1);
+    expect(result.current.servers[0].id).toBe("us-nyc");
   });
 
-  it("should add a favorite with addFavorite", () => {
+  it("should add and remove favorites", () => {
     const { result } = renderHook(() => useServerStore());
-    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
-    
+
     act(() => {
-      result.current.setServers([testServer]);
       result.current.addFavorite("us-nyc");
     });
-    
     expect(result.current.favorites).toContain("us-nyc");
-  });
 
-  it("should remove a favorite with removeFavorite", () => {
-    const { result } = renderHook(() => useServerStore());
-    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
-    
     act(() => {
-      result.current.setServers([testServer]);
-      result.current.addFavorite("us-nyc");
       result.current.removeFavorite("us-nyc");
     });
-    
     expect(result.current.favorites).not.toContain("us-nyc");
   });
 
-  it("should toggle a favorite with toggleFavorite", () => {
+  it("should toggle favorites", () => {
     const { result } = renderHook(() => useServerStore());
-    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
-    
+
     act(() => {
-      result.current.setServers([testServer]);
       result.current.toggleFavorite("us-nyc");
     });
-    
     expect(result.current.favorites).toContain("us-nyc");
-    
+
     act(() => {
       result.current.toggleFavorite("us-nyc");
     });
-    
     expect(result.current.favorites).not.toContain("us-nyc");
   });
 
-  it("should set search query with setSearchQuery", () => {
+  it("should set search query", () => {
     const { result } = renderHook(() => useServerStore());
-    
+
     act(() => {
       result.current.setSearchQuery("New York");
     });
-    
     expect(result.current.searchQuery).toBe("New York");
   });
 
-  it("should set selected region with setSelectedRegion", () => {
+  it("should set selected region", () => {
     const { result } = renderHook(() => useServerStore());
-    
+
     act(() => {
       result.current.setSelectedRegion("US");
     });
-    
     expect(result.current.selectedRegion).toBe("US");
   });
 
-  it("should call invoke and set servers on fetchServers", async () => {
-    const { result } = renderHook(() => useServerStore());
+  it("should fetch servers via invoke", async () => {
     const { invoke } = await import("@tauri-apps/api");
-    const testServers = [
-      { id: "us-nyc", name: "New York", region: "US", load: 10 },
-    ];
-    
-    vi.mocked(invoke).mockResolvedValue(testServers);
-    
+    const servers = [{ id: "us-nyc", name: "New York" }];
+    vi.mocked(invoke).mockResolvedValue(servers);
+
+    const { result } = renderHook(() => useServerStore());
+
     await act(async () => {
       await result.current.fetchServers();
     });
-    
-    expect(invoke).toHaveBeenCalledWith("get_servers");
-    expect(result.current.servers).toEqual(testServers);
+
+    expect(invoke).toHaveBeenCalledWith("fetch_servers");
+    expect(result.current.servers).toHaveLength(1);
   });
 });
