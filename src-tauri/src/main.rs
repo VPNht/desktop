@@ -3,17 +3,20 @@
 
 mod crypto;
 mod killswitch;
+mod vpn;
 mod wireguard;
 
 use std::sync::{Arc, Mutex};
 use tauri::State;
 use wireguard::{VpnStatus, WireGuardManager};
 use killswitch::{KillSwitch, KillSwitchState};
+use vpn::auto_reconnect::{AutoReconnectConfig, AutoReconnectManager, ReconnectState};
 
 // App state that persists across commands
 pub struct AppState {
     wg_manager: Arc<Mutex<WireGuardManager>>,
     killswitch: Arc<Mutex<Box<dyn KillSwitch>>>,
+    auto_reconnect: Arc<Mutex<AutoReconnectManager>>,
 }
 
 impl Default for AppState {
@@ -21,6 +24,7 @@ impl Default for AppState {
         Self {
             wg_manager: Arc::new(Mutex::new(WireGuardManager::new())),
             killswitch: Arc::new(Mutex::new(killswitch::create_killswitch())),
+            auto_reconnect: Arc::new(Mutex::new(AutoReconnectManager::new(AutoReconnectConfig::default()))),
         }
     }
 }
@@ -117,6 +121,28 @@ async fn get_killswitch_state(state: State<'_, AppState>) -> Result<KillSwitchSt
     Ok(ks.state())
 }
 
+#[tauri::command]
+async fn get_reconnect_state(state: State<'_, AppState>) -> Result<ReconnectState, String> {
+    let mgr = state.auto_reconnect.lock().map_err(|e| e.to_string())?;
+    Ok(mgr.state())
+}
+
+#[tauri::command]
+async fn set_auto_reconnect(enabled: bool, state: State<'_, AppState>) -> Result<String, String> {
+    let mut mgr = state.auto_reconnect.lock().map_err(|e| e.to_string())?;
+    let mut config = AutoReconnectConfig::default();
+    config.enabled = enabled;
+    mgr.set_config(config);
+    Ok(format!("Auto-reconnect {}", if enabled { "enabled" } else { "disabled" }))
+}
+
+#[tauri::command]
+async fn cancel_reconnect(state: State<'_, AppState>) -> Result<String, String> {
+    let mgr = state.auto_reconnect.lock().map_err(|e| e.to_string())?;
+    mgr.cancel();
+    Ok("Reconnect cancelled".to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -133,6 +159,9 @@ fn main() {
             enable_killswitch,
             disable_killswitch,
             get_killswitch_state,
+            get_reconnect_state,
+            set_auto_reconnect,
+            cancel_reconnect,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
