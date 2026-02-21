@@ -1,99 +1,117 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import { useServerStore } from "../../src/stores";
 
+// Mock @tauri-apps/api before importing store
 vi.mock("@tauri-apps/api", () => ({
   invoke: vi.fn(),
 }));
 
 describe("Server Store", () => {
   beforeEach(() => {
-    useServerStore.setState({
-      servers: [],
-      favorites: [],
-      selectedRegion: null,
-      searchQuery: "",
-      isLoading: false,
-      latencyMap: new Map(),
-      lastUpdated: null,
+    // Reset the store before each test
+    const { setServers, setSearchQuery, setSelectedRegion } = useServerStore.getState();
+    act(() => {
+      setServers([]);
+      setSearchQuery("");
+      setSelectedRegion(null);
     });
   });
 
   it("should initialize with empty servers", () => {
-    const { result } = renderHook(() => useServerStore());
-    expect(result.current.servers).toEqual([]);
+    const state = useServerStore.getState();
+    expect(state.servers).toEqual([]);
   });
 
-  it("should set servers", () => {
-    const { result } = renderHook(() => useServerStore());
-    const servers = [{ id: "us-nyc", name: "New York" }] as any;
-
+  it("should set servers with setServers", () => {
+    const testServers = [
+      { id: "us-nyc", name: "New York", region: "US", load: 10 },
+      { id: "uk-lon", name: "London", region: "UK", load: 20 },
+    ];
+    
     act(() => {
-      result.current.setServers(servers);
+      useServerStore.getState().setServers(testServers);
     });
-
-    expect(result.current.servers).toHaveLength(1);
-    expect(result.current.servers[0].id).toBe("us-nyc");
+    
+    const state = useServerStore.getState();
+    expect(state.servers).toEqual(testServers);
   });
 
-  it("should add and remove favorites", () => {
-    const { result } = renderHook(() => useServerStore());
-
+  it("should add a favorite with addFavorite", () => {
+    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
+    
     act(() => {
-      result.current.addFavorite("us-nyc");
+      useServerStore.getState().setServers([testServer]);
+      useServerStore.getState().addFavorite("us-nyc");
     });
-    expect(result.current.favorites).toContain("us-nyc");
-
-    act(() => {
-      result.current.removeFavorite("us-nyc");
-    });
-    expect(result.current.favorites).not.toContain("us-nyc");
+    
+    const state = useServerStore.getState();
+    expect(state.favorites).toContain("us-nyc");
   });
 
-  it("should toggle favorites", () => {
-    const { result } = renderHook(() => useServerStore());
-
+  it("should remove a favorite with removeFavorite", () => {
+    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
+    
     act(() => {
-      result.current.toggleFavorite("us-nyc");
+      useServerStore.getState().setServers([testServer]);
+      useServerStore.getState().addFavorite("us-nyc");
+      useServerStore.getState().removeFavorite("us-nyc");
     });
-    expect(result.current.favorites).toContain("us-nyc");
-
-    act(() => {
-      result.current.toggleFavorite("us-nyc");
-    });
-    expect(result.current.favorites).not.toContain("us-nyc");
+    
+    const state = useServerStore.getState();
+    expect(state.favorites).not.toContain("us-nyc");
   });
 
-  it("should set search query", () => {
-    const { result } = renderHook(() => useServerStore());
-
+  it("should toggle a favorite with toggleFavorite", () => {
+    const testServer = { id: "us-nyc", name: "New York", region: "US", load: 10 };
+    
     act(() => {
-      result.current.setSearchQuery("New York");
+      useServerStore.getState().setServers([testServer]);
+      useServerStore.getState().toggleFavorite("us-nyc");
     });
-    expect(result.current.searchQuery).toBe("New York");
+    
+    const state = useServerStore.getState();
+    expect(state.favorites).toContain("us-nyc");
+    
+    act(() => {
+      useServerStore.getState().toggleFavorite("us-nyc");
+    });
+    
+    expect(useServerStore.getState().favorites).not.toContain("us-nyc");
   });
 
-  it("should set selected region", () => {
-    const { result } = renderHook(() => useServerStore());
-
+  it("should set search query with setSearchQuery", () => {
     act(() => {
-      result.current.setSelectedRegion("US");
+      useServerStore.getState().setSearchQuery("New York");
     });
-    expect(result.current.selectedRegion).toBe("US");
+    
+    const state = useServerStore.getState();
+    expect(state.searchQuery).toBe("New York");
   });
 
-  it("should fetch servers via invoke", async () => {
+  it("should set selected region with setSelectedRegion", () => {
+    act(() => {
+      useServerStore.getState().setSelectedRegion("US");
+    });
+    
+    const state = useServerStore.getState();
+    expect(state.selectedRegion).toBe("US");
+  });
+
+  it("should call invoke and set servers on fetchServers", async () => {
     const { invoke } = await import("@tauri-apps/api");
-    const servers = [{ id: "us-nyc", name: "New York" }];
-    vi.mocked(invoke).mockResolvedValue(servers);
-
-    const { result } = renderHook(() => useServerStore());
-
+    const testServers = [
+      { id: "us-nyc", name: "New York", region: "US", load: 10 },
+    ];
+    
+    vi.mocked(invoke).mockResolvedValue(testServers);
+    
     await act(async () => {
-      await result.current.fetchServers();
+      await useServerStore.getState().fetchServers();
     });
-
+    
     expect(invoke).toHaveBeenCalledWith("fetch_servers");
-    expect(result.current.servers).toHaveLength(1);
+    const state = useServerStore.getState();
+    expect(state.servers).toEqual(testServers);
   });
 });

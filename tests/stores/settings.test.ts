@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import { useSettingsStore } from "../../src/stores";
 
 // Mock @tauri-apps/api before importing store
@@ -10,87 +10,89 @@ vi.mock("@tauri-apps/api", () => ({
 describe("Settings Store", () => {
   beforeEach(() => {
     // Reset the store before each test
-    useSettingsStore.getState().reset();
+    const { setLanguage, setTheme, setAutoConnect, setKillSwitch, setMinimizeToTray, setStartup, setPreferredProtocol } = useSettingsStore.getState();
+    act(() => {
+      setLanguage("en");
+      setTheme("system");
+      setAutoConnect(false);
+      setKillSwitch(false);
+      setMinimizeToTray(false);
+      setStartup(false);
+      setPreferredProtocol("wireguard");
+    });
   });
 
   it("should initialize with default values", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    expect(result.current.language).toBe("en");
-    expect(result.current.theme).toBe("system");
-    expect(result.current.autoConnect).toBe(false);
-    expect(result.current.killSwitch).toBe(false);
-    expect(result.current.protocol).toBe("wireguard");
-    expect(result.current.minimizeToTray).toBe(false);
-    expect(result.current.startOnBoot).toBe(false);
+    const state = useSettingsStore.getState();
+    expect(state.language).toBe("en");
+    expect(state.theme).toBe("system");
+    expect(state.autoConnect).toBe(false);
+    expect(state.killSwitch).toBe(false);
+    expect(state.minimizeToTray).toBe(false);
+    expect(state.startup).toBe(false);
+    expect(state.preferredProtocol).toBe("wireguard");
   });
 
   it("should update language with setLanguage", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
     act(() => {
-      result.current.setLanguage("fr");
+      useSettingsStore.getState().setLanguage("fr");
     });
     
-    expect(result.current.language).toBe("fr");
+    const state = useSettingsStore.getState();
+    expect(state.language).toBe("fr");
   });
 
   it("should update theme with setTheme", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
     act(() => {
-      result.current.setTheme("dark");
+      useSettingsStore.getState().setTheme("dark");
     });
     
-    expect(result.current.theme).toBe("dark");
+    const state = useSettingsStore.getState();
+    expect(state.theme).toBe("dark");
   });
 
   it("should update autoConnect with setAutoConnect", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
     act(() => {
-      result.current.setAutoConnect(true);
+      useSettingsStore.getState().setAutoConnect(true);
     });
     
-    expect(result.current.autoConnect).toBe(true);
+    const state = useSettingsStore.getState();
+    expect(state.autoConnect).toBe(true);
   });
 
   it("should update killSwitch with setKillSwitch", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
     act(() => {
-      result.current.setKillSwitch(true);
+      useSettingsStore.getState().setKillSwitch(true);
     });
     
-    expect(result.current.killSwitch).toBe(true);
+    const state = useSettingsStore.getState();
+    expect(state.killSwitch).toBe(true);
   });
 
-  it("should update protocol with setProtocol", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
+  it("should update protocol with setPreferredProtocol", () => {
     act(() => {
-      result.current.setProtocol("openvpn");
+      useSettingsStore.getState().setPreferredProtocol("openvpn_udp");
     });
     
-    expect(result.current.protocol).toBe("openvpn");
+    const state = useSettingsStore.getState();
+    expect(state.preferredProtocol).toBe("openvpn_udp");
   });
 
   it("should update minimizeToTray with setMinimizeToTray", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
     act(() => {
-      result.current.setMinimizeToTray(true);
+      useSettingsStore.getState().setMinimizeToTray(true);
     });
     
-    expect(result.current.minimizeToTray).toBe(true);
+    const state = useSettingsStore.getState();
+    expect(state.minimizeToTray).toBe(true);
   });
 
-  it("should update startOnBoot with setStartOnBoot", () => {
-    const { result } = renderHook(() => useSettingsStore());
-    
+  it("should update startup with setStartup", () => {
     act(() => {
-      result.current.setStartOnBoot(true);
+      useSettingsStore.getState().setStartup(true);
     });
     
-    expect(result.current.startOnBoot).toBe(true);
+    const state = useSettingsStore.getState();
+    expect(state.startup).toBe(true);
   });
 });

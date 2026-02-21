@@ -1,33 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import { useConnectionStore } from "../../src/stores";
 
 vi.mock("@tauri-apps/api", () => ({
   invoke: vi.fn(),
 }));
 
-const mockServer = {
-  id: "us-nyc",
-  name: "New York",
-  country: "United States",
-  countryCode: "US",
-  city: "New York",
-  lat: 40.71,
-  lng: -74.0,
-  hostname: "us-nyc.vpnht.com",
-  ip: "1.2.3.4",
-  port: 443,
-  publicKey: "key",
-  supportedProtocols: ["wireguard"] as any,
-  features: ["p2p"] as any,
-  latency: 25,
-  load: 50,
-  isPremium: false,
-};
-
 describe("Connection Store", () => {
   beforeEach(() => {
-    // Reset store state directly
     useConnectionStore.setState({
       status: "disconnected",
       server: undefined,
@@ -37,32 +17,27 @@ describe("Connection Store", () => {
       error: undefined,
       ipInfo: undefined,
     });
+    vi.clearAllMocks();
   });
 
-  it("should initialize with disconnected status", () => {
-    const { result } = renderHook(() => useConnectionStore());
-    expect(result.current.status).toBe("disconnected");
+  it("should initialize disconnected", () => {
+    expect(useConnectionStore.getState().status).toBe("disconnected");
   });
 
-  it("should change status with setStatus", () => {
-    const { result } = renderHook(() => useConnectionStore());
-    act(() => {
-      result.current.setStatus("connected");
-    });
-    expect(result.current.status).toBe("connected");
+  it("should set status", () => {
+    act(() => { useConnectionStore.getState().setStatus("connected"); });
+    expect(useConnectionStore.getState().status).toBe("connected");
   });
 
   it("should connect successfully", async () => {
     const { invoke } = await import("@tauri-apps/api");
     vi.mocked(invoke).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useConnectionStore());
-
     await act(async () => {
-      await result.current.connect(mockServer);
+      await useConnectionStore.getState().connect({ id: "us-nyc" } as any);
     });
 
-    expect(result.current.status).toBe("connected");
+    expect(useConnectionStore.getState().status).toBe("connected");
     expect(invoke).toHaveBeenCalledWith("vpn_connect", { serverId: "us-nyc" });
   });
 
@@ -70,87 +45,60 @@ describe("Connection Store", () => {
     const { invoke } = await import("@tauri-apps/api");
     vi.mocked(invoke).mockRejectedValue(new Error("Connection failed"));
 
-    const { result } = renderHook(() => useConnectionStore());
-
     try {
       await act(async () => {
-        await result.current.connect(mockServer);
+        await useConnectionStore.getState().connect({ id: "us-nyc" } as any);
       });
-    } catch {
-      // expected
-    }
+    } catch { /* expected */ }
 
-    expect(result.current.status).toBe("error");
-    expect(result.current.error).toBe("Connection failed");
+    expect(useConnectionStore.getState().status).toBe("error");
+    expect(useConnectionStore.getState().error).toBe("Connection failed");
   });
 
-  it("should disconnect successfully", async () => {
+  it("should disconnect", async () => {
     const { invoke } = await import("@tauri-apps/api");
     vi.mocked(invoke).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useConnectionStore());
-
-    // First set to connected
-    act(() => {
-      result.current.setStatus("connected");
-    });
+    act(() => { useConnectionStore.getState().setStatus("connected"); });
 
     await act(async () => {
-      await result.current.disconnect();
+      await useConnectionStore.getState().disconnect();
     });
 
-    expect(result.current.status).toBe("disconnected");
+    expect(useConnectionStore.getState().status).toBe("disconnected");
   });
 
   it("should update stats", () => {
-    const { result } = renderHook(() => useConnectionStore());
-
-    act(() => {
-      result.current.updateStats(1024, 2048);
-    });
-
-    expect(result.current.bytesReceived).toBe(1024);
-    expect(result.current.bytesSent).toBe(2048);
+    act(() => { useConnectionStore.getState().updateStats(1024, 2048); });
+    expect(useConnectionStore.getState().bytesReceived).toBe(1024);
+    expect(useConnectionStore.getState().bytesSent).toBe(2048);
   });
 
   it("should set error", () => {
-    const { result } = renderHook(() => useConnectionStore());
-
-    act(() => {
-      result.current.setError("Test error");
-    });
-
-    expect(result.current.error).toBe("Test error");
-    expect(result.current.status).toBe("error");
+    act(() => { useConnectionStore.getState().setError("Test error"); });
+    expect(useConnectionStore.getState().error).toBe("Test error");
+    expect(useConnectionStore.getState().status).toBe("error");
   });
 
   it("should not connect when already connecting", async () => {
-    const { result } = renderHook(() => useConnectionStore());
+    const { invoke } = await import("@tauri-apps/api");
+    act(() => { useConnectionStore.getState().setStatus("connecting"); });
 
-    act(() => {
-      result.current.setStatus("connecting");
-    });
-
-    // Should silently return
     await act(async () => {
-      await result.current.connect(mockServer);
+      await useConnectionStore.getState().connect({ id: "us-nyc" } as any);
     });
 
-    // Status unchanged
-    expect(result.current.status).toBe("connecting");
+    // Should silently return — invoke not called
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it("should not disconnect when already disconnected", async () => {
     const { invoke } = await import("@tauri-apps/api");
-    vi.mocked(invoke).mockClear();
-
-    const { result } = renderHook(() => useConnectionStore());
 
     await act(async () => {
-      await result.current.disconnect();
+      await useConnectionStore.getState().disconnect();
     });
 
-    // Should not call invoke
     expect(invoke).not.toHaveBeenCalled();
   });
 });
