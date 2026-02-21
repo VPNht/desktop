@@ -2,21 +2,25 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod crypto;
+mod killswitch;
 mod wireguard;
 
 use std::sync::{Arc, Mutex};
 use tauri::State;
 use wireguard::{VpnStatus, WireGuardManager};
+use killswitch::{KillSwitch, KillSwitchState};
 
 // App state that persists across commands
 pub struct AppState {
     wg_manager: Arc<Mutex<WireGuardManager>>,
+    killswitch: Arc<Mutex<Box<dyn KillSwitch>>>,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
             wg_manager: Arc::new(Mutex::new(WireGuardManager::new())),
+            killswitch: Arc::new(Mutex::new(killswitch::create_killswitch())),
         }
     }
 }
@@ -89,6 +93,30 @@ fn generate_encryption_key() -> String {
     crypto::generate_key()
 }
 
+#[tauri::command]
+async fn enable_killswitch(
+    vpn_interface: String,
+    vpn_server_ip: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut ks = state.killswitch.lock().map_err(|e| e.to_string())?;
+    ks.enable(&vpn_interface, &vpn_server_ip)?;
+    Ok("Kill switch enabled".to_string())
+}
+
+#[tauri::command]
+async fn disable_killswitch(state: State<'_, AppState>) -> Result<String, String> {
+    let mut ks = state.killswitch.lock().map_err(|e| e.to_string())?;
+    ks.disable()?;
+    Ok("Kill switch disabled".to_string())
+}
+
+#[tauri::command]
+async fn get_killswitch_state(state: State<'_, AppState>) -> Result<KillSwitchState, String> {
+    let ks = state.killswitch.lock().map_err(|e| e.to_string())?;
+    Ok(ks.state())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -102,6 +130,9 @@ fn main() {
             list_configs,
             delete_config,
             generate_encryption_key,
+            enable_killswitch,
+            disable_killswitch,
+            get_killswitch_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
