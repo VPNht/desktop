@@ -1,0 +1,1 @@
+# TEST_PLAN.md\n\n## Run Locally\nnpm test\ncd src-tauri && cargo test\n\n## Coverage\n73 vitest pass (utils/stores/VPN flow mocks).\nCargo 2 tests.\nGaps: E2E IPC, real WG mocks, KS.\n\n## CI\nworkflows/test.yml: vitest cargo.\nAdd: e2e playwright stubs.
