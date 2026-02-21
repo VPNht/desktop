@@ -13,7 +13,6 @@ import {
 import { useConnectionStore, useServerStore } from "@stores";
 import { getCountryFlag, formatDuration, formatBytes } from "@utils/helpers";
 import { cn } from "@utils/helpers";
-import type { Server } from "@types";
 
 export function Home() {
   const { t } = useTranslation();
@@ -23,7 +22,6 @@ export function Home() {
   const [elapsed, setElapsed] = useState(0);
   const isConnected = status === "connected";
   const isConnecting = status === "connecting";
-  const isDisconnected = status === "disconnected";
 
   // Update elapsed time
   useEffect(() => {
@@ -65,18 +63,7 @@ export function Home() {
     }
   };
 
-  const getStatusBg = () => {
-    switch (status) {
-      case "connected":
-        return "bg-success-500";
-      case "connecting":
-        return "bg-yellow-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  return (
+    return (
     <div className="space-y-8">
       {/* Header */}
       <div>

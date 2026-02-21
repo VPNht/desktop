@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { Outlet, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Home,
@@ -15,7 +15,6 @@ export function Layout() {
   const { t } = useTranslation();
   const { logout } = useAuthStore();
   const { status, server } = useConnectionStore();
-  const location = useLocation();
 
   const navItems = [
     { path: "/", label: t("nav.home"), icon: Home },

@@ -1,8 +1,8 @@
 import { GraphQLClient } from "graphql-request";
 import type {
   Server,
-  User,
-  AuthTokens,
+  Protocol,
+  ServerFeature,
   LatencyResult,
   IPInfo,
 } from "@types";
@@ -267,5 +267,5 @@ function getMockServers(): Server[] {
     { id: "lt-vil", name: "Vilnius", country: "Lithuania", countryCode: "LT", city: "Vilnius", lat: 54.6872, lng: 25.2797, hostname: "lt-vil.vpnht.com", ip: "192.168.8.6", port: 443, publicKey: "mno901...", supportedProtocols: ["wireguard"], features: ["p2p"], load: 38 },
     { id: "at-vie", name: "Vienna", country: "Austria", countryCode: "AT", city: "Vienna", lat: 48.2082, lng: 16.3738, hostname: "at-vie.vpnht.com", ip: "192.168.8.7", port: 443, publicKey: "pqr234...", supportedProtocols: ["wireguard"], features: ["p2p"], load: 44 },
     { id: "be-bru", name: "Brussels", country: "Belgium", countryCode: "BE", city: "Brussels", lat: 50.8503, lng: 4.3517, hostname: "be-bru.vpnht.com", ip: "192.168.8.8", port: 443, publicKey: "stu567...", supportedProtocols: ["wireguard"], features: ["p2p"], load: 47 },
-  ].map(s => ({ ...s, latency: Math.floor(Math.random() * 150) + 10 }));
+  ].map(s => ({ ...s, latency: Math.floor(Math.random() * 150) + 10, supportedProtocols: s.supportedProtocols as Protocol[], features: s.features as ServerFeature[] }));
 }

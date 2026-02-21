@@ -1,6 +1,5 @@
 import { expect, describe, it, beforeEach } from "vitest";
-import { formatBytes, formatDuration, validateEmail, validatePassword } from "./helpers";
-import { groupByRegion } from "./helpers";
+import { formatBytes, formatDuration, validateEmail, validatePassword, groupByRegion } from "../src/utils/helpers";
 
 describe("formatBytes", () => {
   it("should format bytes correctly", () => {

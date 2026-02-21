@@ -27,7 +27,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    immer((set, get) => ({
+    immer((set, _get) => ({
       user: null,
       tokens: null,
       isAuthenticated: false,
