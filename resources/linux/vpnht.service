@@ -1,8 +1,0 @@
-[Unit]
-Description=VPN.ht Client Daemon
-
-[Service]
-ExecStart=/usr/bin/vpnht-service
-
-[Install]
-WantedBy=multi-user.target

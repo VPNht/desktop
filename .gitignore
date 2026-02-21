@@ -1,8 +1,58 @@
-.DS_Store
-go
-/build
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
 node_modules
-dev
-packages/client/target
-packages/service/service
-developer-id-cert.p12
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Tauri
+/src-tauri/target
+/src-tauri/WixTools
+/src-tauri/gen
+
+# Production builds
+/release
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+*.cache
+
+# WireGuard configs (sensitive)
+*.conf
+*.key
+privatekey
+publickey
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Cargo
+Cargo.lock
+
+# Test artifacts
+*.profraw

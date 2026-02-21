@@ -1,0 +1,48 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for VPNht Desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-start-dragging",
+    "shell:default",
+    "shell:default",
+    "shell:allow-execute",
+    "shell:allow-open",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "args": true,
+          "cmd": "wg-quick",
+          "name": "wg-quick",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "wg",
+          "name": "wg",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "pkexec",
+          "name": "pkexec",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "sudo",
+          "name": "sudo",
+          "sidecar": false
+        }
+      ]
+    },
+    "log:default"
+  ]
+}
