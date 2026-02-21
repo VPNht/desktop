@@ -29,12 +29,6 @@
       }
     ]
   },
-  "plugins": {
-    "log": {
-      "level": "info",
-      "target": "stdout"
-    }
-  },
   "bundle": {
     "active": true,
     "targets": ["deb", "rpm", "dmg", "appimage"],

@@ -92,7 +92,6 @@ fn generate_encryption_key() -> String {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_log::Builder::default().build())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             connect_vpn,
