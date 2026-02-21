@@ -95,8 +95,16 @@ jobs:
       - name: Install tauri-cli
         run: npm install -g tauri-cli
 
+      - name: Verify Tauri config
+        run: |
+          if [ ! -f "src-tauri/tauri.conf.json" ]; then
+            echo "Error: tauri.conf.json not found!"
+            exit 1
+          fi
+          cat src-tauri/tauri.conf.json
+
       - name: Build Tauri
-        run: npm run tauri:build -- ${{ matrix.args }}
+        run: cd src-tauri && npm run tauri:build -- ${{ matrix.args }}
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
