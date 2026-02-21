@@ -70,14 +70,15 @@ describe("Server Store", () => {
       useServerStore.getState().toggleFavorite("us-nyc");
     });
     
-    const state = useServerStore.getState();
+    let state = useServerStore.getState();
     expect(state.favorites).toContain("us-nyc");
     
     act(() => {
       useServerStore.getState().toggleFavorite("us-nyc");
     });
     
-    expect(useServerStore.getState().favorites).not.toContain("us-nyc");
+    state = useServerStore.getState();
+    expect(state.favorites).not.toContain("us-nyc");
   });
 
   it("should set search query with setSearchQuery", () => {
