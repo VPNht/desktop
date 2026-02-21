@@ -114,10 +114,7 @@
       "csp": "default-src 'self'; connect-src 'self' https: wss:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none';",
       "dangerousDisableAssetCspModification": false,
       "dangerousUseHttpScheme": false,
-      "freezePrototype": true,
-      "pattern": {
-        "use": "brownfield"
-      }
+      "freezePrototype": true
     },
     "systemTray": {
       "iconPath": "icons/icon.png",
@@ -128,10 +125,9 @@
       "active": true,
       "dialog": true,
       "endpoints": [
-        "https://updates.vpnht.com/{{target}}/{{current_version}}",
-        "https://api.github.com/repos/VPNht/desktop/releases/latest"
+        "https://updates.vpnht.com/{{target}}/{{current_version}}"
       ],
-      "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE",
+      "pubkey": "MCowBQYDK2VwAyEAkzFZjartIAgkpd/4uvrallvaEPFhIjny9ZaH20rzDqk=",
       "windows": {
         "installMode": "passive"
       }
