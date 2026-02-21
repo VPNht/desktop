@@ -2,10 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [main, develop, vpnht-rewrite]
+    branches: [vpnht-rewrite]
     tags: ['v*']
   pull_request:
-    branches: [main, develop]
+    branches: [vpnht-rewrite]
 
 env:
   CARGO_INCREMENTAL: 0
@@ -38,12 +38,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
@@ -162,7 +162,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 

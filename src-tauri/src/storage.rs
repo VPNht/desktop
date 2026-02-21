@@ -1,5 +1,5 @@
 use serde::{de::DeserializeOwned, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
 use crate::error::Result;
 use keyring::Entry;
 
@@ -72,7 +72,7 @@ impl SecureStorage {
     }
 }
 
-pub fn init_secure_storage(app: &AppHandle) -> Result<()> {
+pub fn init_secure_storage(app: &tauri::App) -> Result<()> {
     // Initialization complete - SecureStorage is now managed
     app.manage(SecureStorage::new("com.vpnht.desktop".to_string()));
     Ok(())

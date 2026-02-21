@@ -4,7 +4,10 @@ mod error;
 mod storage;
 mod vpn;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tauri::{generate_context, generate_handler, Builder, Manager, SystemTray, SystemTrayEvent, CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem};
+use vpn::ConnectionManager;
 
 fn main() {
     // System tray setup
@@ -65,7 +68,7 @@ fn main() {
             commands::vpn_connect,
             commands::vpn_disconnect,
             commands::get_connection_status,
-            commands::generate_wireguard_config,
+            commands::gen_wireguard_config,
             commands::validate_wireguard_config,
             commands::store_secure,
             commands::retrieve_secure,
@@ -74,6 +77,8 @@ fn main() {
         .setup(|app| {
             // Initialize secure storage
             storage::init_secure_storage(app)?;
+            // Register ConnectionManager as managed state
+            app.manage(Arc::new(Mutex::new(ConnectionManager::new())));
             Ok(())
         })
         .run(generate_context!())

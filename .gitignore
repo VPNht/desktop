@@ -1,0 +1,32 @@
+# Node
+node_modules/
+dist/
+*.local
+
+# Rust
+target/
+Cargo.lock
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / Coverage
+coverage/
+*.lcov
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+src-tauri/icons/icon.ico.bak

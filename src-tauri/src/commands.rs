@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 use crate::error::Result;
 use crate::storage::SecureStorage;
 use crate::vpn::{ConnectionManager, ConnectionStatus};
-use crate::config::{Server, VPNConfig, generate_wireguard_config};
+use crate::config::{Server, WireGuardConfig, generate_wireguard_config};
 
 // Auth Types
 #[derive(Debug, Serialize, Deserialize)]
@@ -340,29 +340,8 @@ pub async fn get_connection_status(
 }
 
 // WireGuard Config Commands
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WireGuardConfig {
-    pub interface: InterfaceConfig,
-    pub peer: PeerConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct InterfaceConfig {
-    pub private_key: String,
-    pub address: Vec<String>,
-    pub dns: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PeerConfig {
-    pub public_key: String,
-    pub allowed_ips: Vec<String>,
-    pub endpoint: String,
-    pub persistent_keepalive: u32,
-}
-
 #[command]
-pub fn generate_wireguard_config(server_id: String) -> Result<WireGuardConfig> {
+pub fn gen_wireguard_config(server_id: String) -> Result<WireGuardConfig> {
     // Generate a new WireGuard config
     let config = generate_wireguard_config(&server_id)?;
     Ok(config)

@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [main, develop, vpnht-rewrite]
+    branches: [vpnht-rewrite]
   pull_request:
-    branches: [main, develop]
+    branches: [vpnht-rewrite]
 
 env:
   CARGO_INCREMENTAL: 0
@@ -59,7 +59,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
