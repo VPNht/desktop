@@ -67,9 +67,9 @@ export function Servers() {
       await Promise.all(
         batch.map(async (server) => {
           try {
-            const latency = await measureLatency(server.id);
-            if (latency !== null) {
-              updateLatency(server.id, latency);
+            const result = await measureLatency(server.id);
+            if (result?.latency !== undefined && result.latency !== null) {
+              updateLatency(server.id, result.latency);
             }
           } catch {
             // Skip failed latency checks
