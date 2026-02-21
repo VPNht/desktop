@@ -3,6 +3,7 @@
 
 mod crypto;
 mod killswitch;
+mod split_tunnel;
 mod vpn;
 mod wireguard;
 
@@ -11,12 +12,14 @@ use tauri::State;
 use wireguard::{VpnStatus, WireGuardManager};
 use killswitch::{KillSwitch, KillSwitchState};
 use vpn::auto_reconnect::{AutoReconnectConfig, AutoReconnectManager, ReconnectState};
+use split_tunnel::{SplitTunnelConfig, SplitTunnelManager, SplitTunnelState};
 
 // App state that persists across commands
 pub struct AppState {
     wg_manager: Arc<Mutex<WireGuardManager>>,
     killswitch: Arc<Mutex<Box<dyn KillSwitch>>>,
     auto_reconnect: Arc<Mutex<AutoReconnectManager>>,
+    split_tunnel: Arc<Mutex<SplitTunnelManager>>,
 }
 
 impl Default for AppState {
@@ -25,6 +28,7 @@ impl Default for AppState {
             wg_manager: Arc::new(Mutex::new(WireGuardManager::new())),
             killswitch: Arc::new(Mutex::new(killswitch::create_killswitch())),
             auto_reconnect: Arc::new(Mutex::new(AutoReconnectManager::new(AutoReconnectConfig::default()))),
+            split_tunnel: Arc::new(Mutex::new(SplitTunnelManager::new())),
         }
     }
 }
@@ -143,6 +147,31 @@ async fn cancel_reconnect(state: State<'_, AppState>) -> Result<String, String> 
     Ok("Reconnect cancelled".to_string())
 }
 
+#[tauri::command]
+async fn get_split_tunnel_state(state: State<'_, AppState>) -> Result<SplitTunnelState, String> {
+    let mgr = state.split_tunnel.lock().map_err(|e| e.to_string())?;
+    Ok(mgr.state())
+}
+
+#[tauri::command]
+async fn set_split_tunnel_config(
+    enabled: bool,
+    bypass_ips: Vec<String>,
+    bypass_apps: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut mgr = state.split_tunnel.lock().map_err(|e| e.to_string())?;
+    mgr.set_config(SplitTunnelConfig { enabled, bypass_ips, bypass_apps })?;
+    Ok("Split tunnel config updated".to_string())
+}
+
+#[tauri::command]
+async fn disable_split_tunnel(state: State<'_, AppState>) -> Result<String, String> {
+    let mut mgr = state.split_tunnel.lock().map_err(|e| e.to_string())?;
+    mgr.disable()?;
+    Ok("Split tunnel disabled".to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -162,6 +191,9 @@ fn main() {
             get_reconnect_state,
             set_auto_reconnect,
             cancel_reconnect,
+            get_split_tunnel_state,
+            set_split_tunnel_config,
+            disable_split_tunnel,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
