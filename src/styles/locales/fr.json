@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "VPNht",
+    "tagline": "Sécurisé. Rapide. Privé."
+  },
+  "nav": {
+    "home": "Accueil",
+    "servers": "Serveurs",
+    "map": "Carte",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
+  "auth": {
+    "login": "Connexion",
+    "signup": "S'inscrire",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié?",
+    "noAccount": "Pas de compte?",
+    "haveAccount": "Déjà un compte?",
+    "loggingIn": "Connexion en cours...",
+    "signingUp": "Création du compte...",
+    "errors": {
+      "invalidEmail": "Veuillez entrer un email valide",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+      "passwordsMatch": "Les mots de passe ne correspondent pas",
+      "loginFailed": "Échec de la connexion. Vérifiez vos identifiants.",
+      "signupFailed": "Échec de la création du compte. Veuillez réessayer."
+    }
+  },
+  "connection": {
+    "status": {
+      "connected": "Connecté",
+      "connecting": "Connexion en cours...",
+      "disconnected": "Déconnecté",
+      "disconnecting": "Déconnexion en cours...",
+      "error": "Erreur de connexion"
+    },
+    "connect": "Connecter",
+    "disconnect": "Déconnecter",
+    "currentServer": "Serveur actuel",
+    "yourIP": "Votre IP",
+    "protected": "Protégé",
+    "exposed": "Exposé",
+    "duration": "Temps de connexion",
+    "dataTransferred": "Données transférées"
+  },
+  "servers": {
+    "title": "Emplacements des serveurs",
+    "search": "Rechercher des serveurs...",
+    "allRegions": "Toutes les régions",
+    "favorites": "Favoris",
+    "latency": "Latence",
+    "load": "Charge",
+    "protocols": "Protocoles",
+    "features": {
+      "p2p": "P2P pris en charge",
+      "streaming": "Optimisé pour le streaming",
+      "doubleVpn": "Double VPN"
+    },
+    "sort": {
+      "name": "Nom",
+      "latency": "Latence",
+      "load": "Charge"
+    }
+  },
+  "map": {
+    "title": "Carte des serveurs",
+    "clickToConnect": "Cliquez sur un serveur pour vous connecter",
+    "serverCount": "{{count}} serveurs disponibles",
+    "yourLocation": "Votre emplacement"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "general": {
+      "title": "Général",
+      "language": "Langue",
+      "startup": "Lancer au démarrage",
+      "minimize": "Réduire dans la barre système",
+      "theme": {
+        "title": "Thème",
+        "light": "Clair",
+        "dark": "Sombre",
+        "system": "Système"
+      }
+    },
+    "connection": {
+      "title": "Connexion",
+      "autoConnect": "Connexion automatique au démarrage",
+      "killSwitch": "Kill Switch",
+      "killSwitchDesc": "Bloquer tout le trafic si le VPN se déconnecte",
+      "dnsLeak": "Protection contre les fuites DNS",
+      "dnsLeakDesc": "Utiliser nos serveurs DNS pour prévenir les fuites",
+      "ipv6": "Désactiver IPv6",
+      "protocol": "Protocole",
+      "protocols": {
+        "wireguard": "WireGuard",
+        "openvpn_udp": "OpenVPN (UDP)",
+        "openvpn_tcp": "OpenVPN (TCP)"
+      }
+    },
+    "advanced": {
+      "title": "Avancé",
+      "obfuscation": "Obfuscation",
+      "obfuscationDesc": "Masquer le trafic VPN pour contourner les pare-feu",
+      "customDns": "DNS personnalisé",
+      "customDnsDesc": "Utiliser des serveurs DNS personnalisés",
+      "mtu": "Taille MTU"
+    }
+  }
+}
